@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Combate — O Jogo de Estratégia</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06080f;--bg-card:rgba(12,18,38,0.92);
+  --border:rgba(80,120,255,0.1);--border-hi:rgba(0,224,255,0.45);
+  --txt:#dde4f0;--dim:#5a6580;--bright:#f4f7ff;
+  --c1:#00deff;--c1g:rgba(0,222,255,0.25);
+  --c2:#8b5cf6;--c2g:rgba(139,92,246,0.22);
+  --gold:#fbbf24;--goldg:rgba(251,191,36,0.25);
+  --red:#f43f5e;--redg:rgba(244,63,94,0.25);
+  --green:#34d399;--greeng:rgba(52,211,153,0.25);
+  --brd-l:#111828;--brd-d:#0d1220;
+  --lake1:#0b2640;--lake2:#0d3a5a;
+  --cs:min(8.6vw,8.6vh,50px);
+  --ps:calc(var(--cs)*0.78);
+  --rad:10px;
+}
+html,body{height:100%;overflow:hidden;
+  font-family:'Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--bg);color:var(--txt);-webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+
+/* BG particles */
+#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* Screens */
+.scr{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .45s ease,transform .45s ease;overflow-y:auto;padding:16px}
+.scr.on{opacity:1;pointer-events:all;transform:translateY(0)}
+
+/* ======== SPLASH ======== */
+#splash{text-align:center;gap:22px}
+.logo{font-size:clamp(2.6rem,9vw,5rem);font-weight:900;letter-spacing:-.04em;
+  background:linear-gradient(135deg,var(--c1),var(--c2),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 30px var(--c1g));line-height:1.1}
+.tagline{font-size:clamp(.82rem,2.4vw,1.05rem);color:var(--dim);max-width:400px;line-height:1.7;margin-top:-4px}
+.btn-p{padding:14px 42px;border-radius:50px;font-size:1rem;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,var(--c1),var(--c2));
+  box-shadow:0 6px 28px var(--c1g);transition:transform .2s,box-shadow .2s}
+.btn-p:active{transform:scale(.96)}
+.btn-s{padding:10px 28px;border-radius:50px;font-size:.88rem;font-weight:600;color:var(--c1);
+  background:transparent;border:1.5px solid rgba(0,222,255,0.25);transition:all .2s}
+.btn-s:active{background:rgba(0,222,255,0.06)}
+.diff-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.db{padding:9px 20px;border-radius:28px;font-size:.82rem;font-weight:600;
+  color:var(--dim);background:var(--bg-card);border:1.5px solid var(--border);transition:all .25s}
+.db.on{color:var(--c1);border-color:var(--c1);background:rgba(0,222,255,0.06);box-shadow:0 0 14px var(--c1g)}
+
+/* ======== SETUP ======== */
+#setup{gap:10px;padding:10px}
+.sh{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:560px;padding:0 2px;flex-wrap:wrap;gap:6px}
+.sh-title{font-size:1rem;font-weight:700;color:var(--bright)}
+.sh-btns{display:flex;gap:5px}
+.sh-btns button{padding:5px 12px;border-radius:24px;font-size:.72rem;font-weight:600}
+.board-wrap{position:relative;display:flex;justify-content:center}
+.stray{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;max-width:560px;padding:8px 6px;
+  background:var(--bg-card);border-radius:var(--rad);border:1px solid var(--border);min-height:50px;align-items:center}
+.stray-hint{color:var(--green);font-size:.78rem;font-weight:600}
+.tp{display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:5px;font-size:.62rem;font-weight:700;
+  cursor:pointer;transition:all .18s;border:1.5px solid transparent;
+  background:linear-gradient(145deg,#162040,#0c1528);color:var(--c1)}
+.tp:active{transform:scale(.92)}
+.tp.sel{border-color:var(--c1);box-shadow:0 0 10px var(--c1g)}
+
+/* ======== BOARD ======== */
+.board{display:grid;grid-template-columns:repeat(10,var(--cs));grid-template-rows:repeat(10,var(--cs));
+  gap:1px;background:rgba(24,34,60,0.5);border:2px solid var(--border);border-radius:var(--rad);
+  overflow:hidden;box-shadow:0 0 50px rgba(0,0,0,.5)}
+.cl{position:relative;display:flex;align-items:center;justify-content:center;
+  transition:background .15s}
+.cl:nth-child(even){background:var(--brd-d)}
+.cl:nth-child(odd){background:var(--brd-l)}
+.cl.lk{background:linear-gradient(135deg,var(--lake1),var(--lake2))}
+.cl.lk::after{content:'〰';position:absolute;font-size:calc(var(--cs)*0.35);opacity:.25;animation:wave 4s ease-in-out infinite;color:var(--c1)}
+@keyframes wave{0%,100%{transform:translateY(0)}50%{transform:translateY(2px)}}
+.cl.vm::before{content:'';position:absolute;width:28%;height:28%;border-radius:50%;
+  background:var(--green);opacity:.55;animation:pdot 1.1s ease-in-out infinite;z-index:2;pointer-events:none}
+.cl.va{box-shadow:inset 0 0 0 2px rgba(244,63,94,0.6);z-index:1}
+.cl.va::after{content:'';position:absolute;inset:0;background:rgba(244,63,94,0.1);pointer-events:none}
+.cl.lm{box-shadow:inset 0 0 0 1px rgba(0,222,255,0.15)}
+
+/* ======== PIECES ======== */
+.pc{position:absolute;width:var(--ps);height:var(--ps);border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;
+  z-index:3;user-select:none;-webkit-user-select:none;
+  font-weight:700;line-height:1;will-change:transform}
+.pc:active{transform:scale(.94)}
+.pc.sel{transform:scale(1.1);z-index:5;animation:gpulse 1s ease-in-out infinite}
+@keyframes gpulse{0%,100%{box-shadow:0 0 10px var(--c1g)}50%{box-shadow:0 0 22px var(--c1g)}}
+.pc .rk{font-size:calc(var(--ps)*0.36);line-height:1}
+.pc .lb{font-size:calc(var(--ps)*0.17);opacity:.8;margin-top:1px;line-height:1}
+.pc.pp{background:linear-gradient(150deg,#162444,#0b1428);border:2px solid rgba(0,222,255,0.35);color:var(--c1)}
+.pc.pp.sel{border-color:var(--c1);box-shadow:0 0 18px var(--c1g)}
+.pc.ap{background:linear-gradient(150deg,#38142a,#280c1a);border:2px solid rgba(244,63,94,0.3);color:var(--red)}
+.pc.ap.hd{background:linear-gradient(150deg,#241828,#180c1c);border-color:rgba(140,80,120,0.25);
+  color:rgba(180,120,150,0.5)}
+.pc.ap.rev{border-color:rgba(244,63,94,0.55)}
+/* Bomb and Flag use the same colors as regular pieces */
+.pc.im{cursor:default}
+.pc.im:active{transform:none}
+
+/* ======== GAME UI ======== */
+#game{gap:5px;padding:6px}
+.gtb{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:560px;padding:3px 6px}
+.ti{display:flex;align-items:center;gap:7px;font-size:.82rem;font-weight:600;
+  padding:5px 12px;border-radius:26px;background:var(--bg-card);border:1px solid var(--border)}
+.td{width:9px;height:9px;border-radius:50%;animation:pdot 1.4s ease-in-out infinite}
+.td.p1{background:var(--c1);box-shadow:0 0 6px var(--c1g)}
+.td.p2{background:var(--red);box-shadow:0 0 6px var(--redg)}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.35}}
+.gbtns{display:flex;gap:5px}
+.ib{width:34px;height:34px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);
+  color:var(--dim);font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.ib:active{color:var(--c1);border-color:var(--c1)}
+.sbar{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;max-width:560px;
+  font-size:.75rem;color:var(--dim)}
+.sbar .sn{font-weight:700;color:var(--bright)}
+.crow{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;max-width:560px;min-height:20px;padding:1px}
+.cchip{width:19px;height:19px;border-radius:3px;display:flex;align-items:center;justify-content:center;
+  font-size:.5rem;font-weight:700;opacity:.7}
+.lp{max-width:560px;width:100%;max-height:55px;overflow-y:auto;padding:3px 6px;font-size:.68rem;
+  color:var(--dim);background:var(--bg-card);border-radius:6px;border:1px solid var(--border)}
+.lp .le{padding:1px 0;border-bottom:1px solid rgba(255,255,255,0.025)}
+.lp .le:last-child{border:none;color:var(--txt)}
+.think{display:flex;gap:3px;align-items:center}
+.think span{width:5px;height:5px;border-radius:50%;background:var(--red);animation:thk 1.2s infinite}
+.think span:nth-child(2){animation-delay:.2s}
+.think span:nth-child(3){animation-delay:.4s}
+@keyframes thk{0%,80%,100%{opacity:.25;transform:scale(.7)}40%{opacity:1;transform:scale(1.15)}}
+
+/* ======== COMBAT OVERLAY ======== */
+.cov{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.78);opacity:0;pointer-events:none;transition:opacity .3s;padding:20px}
+.cov.on{opacity:1;pointer-events:all}
+.cc{display:flex;align-items:center;gap:20px;padding:28px;
+  background:var(--bg-card);border-radius:16px;border:1px solid var(--border);
+  backdrop-filter:blur(16px);transform:scale(.85);transition:transform .3s}
+.cov.on .cc{transform:scale(1)}
+.cu{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:80px}
+.cu .ci{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900}
+.cu .cn{font-size:.82rem;font-weight:600;text-align:center}
+.cu .cr{font-size:.72rem;color:var(--dim)}
+.cvs{font-size:1.6rem;font-weight:900;color:var(--gold);text-shadow:0 0 16px var(--goldg)}
+
+/* ======== MODALS ======== */
+.mov{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.82);opacity:0;pointer-events:none;transition:opacity .3s;padding:20px}
+.mov.on{opacity:1;pointer-events:all}
+.mo{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;
+  max-width:460px;width:100%;max-height:82vh;overflow-y:auto;backdrop-filter:blur(16px)}
+.mo h2{font-size:1.3rem;font-weight:800;margin-bottom:14px;color:var(--bright)}
+.mo p{font-size:.86rem;line-height:1.65;margin-bottom:10px}
+.rt{width:100%;border-collapse:collapse;font-size:.76rem;margin:10px 0}
+.rt th{text-align:left;padding:5px 7px;color:var(--c1);border-bottom:1px solid var(--border);font-weight:600}
+.rt td{padding:5px 7px;border-bottom:1px solid rgba(255,255,255,0.03)}
+.goc{text-align:center}
+.goc .ri{font-size:3.2rem;margin-bottom:10px}
+.goc h2{font-size:1.6rem;margin-bottom:6px}
+.goc .rt2{font-size:.92rem;color:var(--dim);margin-bottom:20px}
+.gob{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* ======== RESPONSIVE ======== */
+@media(max-width:420px){
+  :root{--cs:min(9.4vw,9.4vh,40px)}
+  .gtb{padding:2px 2px}
+  .ti{font-size:.72rem;padding:4px 8px}
+  .cc{gap:12px;padding:18px}
+  .cu .ci{width:44px;height:44px;font-size:1.1rem}
+  .mo{padding:18px}
+  .sh-btns button{padding:4px 9px;font-size:.65rem}
+}
+@media(max-height:640px) and (orientation:portrait){
+  :root{--cs:min(8vw,7.8vh,36px)}
+  .sbar,.crow{display:none}
+  .lp{max-height:30px}
+}
+@media(min-width:600px) and (min-height:500px){
+  :root{--cs:clamp(40px,5.5vh,52px)}
+}
+@media(orientation:landscape) and (max-height:500px){
+  :root{--cs:min(7.5vh,7.5vw,40px)}
+  .sbar,.crow,.lp{display:none}
+  #game{gap:3px;padding:3px}
+}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(100,140,255,0.12);border-radius:3px}
+</style>
+</head>
+<body>
+<canvas id="bgc"></canvas>
+
+<!-- ======== SPLASH ======== -->
+<div id="splash" class="scr on">
+  <div class="logo">COMBATE</div>
+  <p class="tagline">Posicione suas tropas, engane o inimigo e capture a Bandeira adversária. Um clássico absoluto de estratégia, reinventado para 2026.</p>
+  <div class="diff-row">
+    <button class="db" data-d="easy" onclick="setDiff(this)">Recruta</button>
+    <button class="db on" data-d="normal" onclick="setDiff(this)">Soldado</button>
+    <button class="db" data-d="hard" onclick="setDiff(this)">General</button>
+  </div>
+  <button class="btn-p" onclick="startSetup()">▶&ensp;INICIAR JOGO</button>
+  <button class="btn-s" onclick="showM('rules')">📖&ensp;Como Jogar</button>
+</div>
+
+<!-- ======== SETUP ======== -->
+<div id="setup" class="scr">
+  <div class="sh">
+    <span class="sh-title">Posicione suas tropas</span>
+    <div class="sh-btns">
+      <button class="btn-s" onclick="autoArr()">⚡ Auto</button>
+      <button class="btn-s" onclick="shuffleArr()">🔄 Embaralhar</button>
+      <button class="btn-p" style="padding:5px 16px;font-size:.72rem" onclick="confirmSetup()">✓ Pronto</button>
+    </div>
+  </div>
+  <div class="board-wrap"><div id="sb" class="board"></div></div>
+  <div id="stray" class="stray"><span class="stray-hint">Todas as peças posicionadas!</span></div>
+</div>
+
+<!-- ======== GAME ======== -->
+<div id="game" class="scr">
+  <div class="gtb">
+    <div class="ti"><div id="tdot" class="td p1"></div><span id="ttxt">Sua vez</span></div>
+    <div class="gbtns">
+      <button class="ib" onclick="showM('rules')" title="Regras">?</button>
+      <button class="ib" onclick="showM('quit')" title="Sair">✕</button>
+    </div>
+  </div>
+  <div class="sbar">
+    <span>Capturadas: <span id="sc1" class="sn">0</span></span>
+    <span>Perdidas: <span id="sc2" class="sn">0</span></span>
+    <span>Jogada: <span id="smv" class="sn">0</span></span>
+  </div>
+  <div id="capA" class="crow"></div>
+  <div class="board-wrap"><div id="gb" class="board"></div></div>
+  <div id="capP" class="crow"></div>
+  <div id="log" class="lp"></div>
+</div>
+
+<!-- ======== COMBAT ======== -->
+<div id="covl" class="cov"><div class="cc">
+  <div id="cL" class="cu"></div>
+  <div class="cvs">VS</div>
+  <div id="cR" class="cu"></div>
+</div></div>
+
+<!-- ======== GAME OVER ======== -->
+<div id="mogo" class="mov"><div class="mo goc">
+  <div id="goI" class="ri"></div>
+  <h2 id="goT"></h2>
+  <p id="goP" class="rt2"></p>
+  <div class="gob">
+    <button class="btn-p" onclick="restart()">🔄 Jogar Novamente</button>
+    <button class="btn-s" onclick="toMenu()">Menu</button>
+  </div>
+</div></div>
+
+<!-- ======== RULES ======== -->
+<div id="morules" class="mov"><div class="mo">
+  <h2>📖 Como Jogar</h2>
+  <p><strong>Objetivo:</strong> Capture a <strong>Bandeira</strong> do adversário para vencer!</p>
+  <p>Quando duas peças se encontram, a de <strong>maior patente</strong> vence. Peças iguais se eliminam mutuamente. Suas peças são visíveis apenas para você — o inimigo é um mistério!</p>
+  <table class="rt">
+    <tr><th>Peça</th><th>Qtd</th><th>Força</th><th>Habilidade</th></tr>
+    <tr><td>Marechal ♚</td><td>1</td><td>10</td><td>Mais forte. Cuidado com o Espião!</td></tr>
+    <tr><td>General ✦</td><td>1</td><td>9</td><td>Segunda mais forte</td></tr>
+    <tr><td>Coronel ♛</td><td>2</td><td>8</td><td>—</td></tr>
+    <tr><td>Major ◆</td><td>3</td><td>7</td><td>—</td></tr>
+    <tr><td>Capitão ★</td><td>4</td><td>6</td><td>—</td></tr>
+    <tr><td>Tenente ⚔</td><td>4</td><td>5</td><td>—</td></tr>
+    <tr><td>Sargento ✠</td><td>4</td><td>4</td><td>—</td></tr>
+    <tr><td>Mineiro ⛏</td><td>5</td><td>3</td><td>Desarma Bombas</td></tr>
+    <tr><td>Explorador ◇</td><td>8</td><td>2</td><td>Move várias casas em linha</td></tr>
+    <tr><td>Espião 🗡</td><td>1</td><td>1</td><td>Elimina o Marechal ao atacar</td></tr>
+    <tr><td>Bomba 💣</td><td>6</td><td>—</td><td>Imóvel. Destrói atacantes (exceto Mineiro)</td></tr>
+    <tr><td>Bandeira ⚑</td><td>1</td><td>—</td><td>Imóvel. Se capturada, você perde!</td></tr>
+  </table>
+  <p><strong>Dica:</strong> Use os Exploradores para testar peças inimigas sem arriscar tropas valiosas. Mineiros abrem caminho através de Bombas!</p>
+  <button class="btn-s" onclick="hideM('rules')" style="margin-top:12px">Entendi</button>
+</div></div>
+
+<!-- ======== QUIT CONFIRM ======== -->
+<div id="moquit" class="mov"><div class="mo" style="text-align:center">
+  <h2>Abandonar partida?</h2>
+  <p style="color:var(--dim)">Seu progresso será perdido.</p>
+  <div class="gob" style="margin-top:14px">
+    <button class="btn-p" style="background:var(--red)" onclick="quitConfirm()">Sim, sair</button>
+    <button class="btn-s" onclick="hideM('quit')">Cancelar</button>
+  </div>
+</div></div>
+
+<script>
+/* ===========================================================
+   COMBATE — O Jogo de Estratégia (Stratego) — Versão 2026
+   Código-fonte completo em JavaScript puro
+   =========================================================== */
+
+// ───── Constants ─────
+const R=10,C=10;
+const LAKES=new Set(['4,2','4,3','5,2','5,3','4,6','4,7','5,6','5,7']);
+const DEFS=[
+  {t:'marshal',  l:'Marechal',   a:'10',rk:10,n:1,ic:'♚'},
+  {t:'general',  l:'General',    a:'9', rk:9, n:1,ic:'✦'},
+  {t:'colonel',  l:'Coronel',    a:'8', rk:8, n:2,ic:'♛'},
+  {t:'major',    l:'Major',      a:'7', rk:7, n:3,ic:'◆'},
+  {t:'captain',  l:'Capitão',    a:'6', rk:6, n:4,ic:'★'},
+  {t:'lieutenant',l:'Tenente',   a:'5', rk:5, n:4,ic:'⚔'},
+  {t:'sergeant', l:'Sargento',   a:'4', rk:4, n:4,ic:'✠'},
+  {t:'miner',    l:'Mineiro',    a:'3', rk:3, n:5,ic:'⛏'},
+  {t:'scout',    l:'Explorador', a:'2', rk:2, n:8,ic:'◇'},
+  {t:'spy',      l:'Espião',     a:'1', rk:1, n:1,ic:'🗡'},
+  {t:'bomb',     l:'Bomba',      a:'B', rk:-1,n:6,ic:'💣'},
+  {t:'flag',     l:'Bandeira',   a:'⚑', rk:0, n:1,ic:'⚑'}
+];
+
+// ───── State ─────
+let G={
+  phase:'splash',diff:'normal',
+  board:null, cur:1, sel:null, vm:[],
+  cap:{1:[],2:[]}, rev:new Set(),
+  last:null, mc:0, ncapt:0, busy:false,
+  sB:null, sP:null, sSel:null
+};
+
+// ───── Helpers ─────
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+const k=(r,c)=>`${r},${c}`;
+const isLk=(r,c)=>LAKES.has(k(r,c));
+const inB=(r,c)=>r>=0&&r<R&&c>=0&&c<C;
+const D=t=>DEFS.find(d=>d.t===t);
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+let uid=0;
+const mkPiece=(t,p)=>{const d=D(t);return{t,p,rk:d.rk,l:d.l,a:d.a,ic:d.ic,id:++uid}};
+function shuf(a){for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function genPieces(p){const list=[];DEFS.forEach(d=>{for(let i=0;i<d.n;i++)list.push(mkPiece(d.t,p))});return list}
+
+// ───── Audio ─────
+let actx;
+function snd(type){
+  try{
+    if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.connect(g);g.connect(actx.destination);
+    g.gain.value=0.06;
+    const cfg={
+      sel:[660,'sine',.045],mv:[440,'sine',.035],atk:[200,'sawtooth',.07],
+      win:[880,'sine',.06],lose:[140,'sawtooth',.08],pl:[520,'triangle',.03]
+    }[type]||[440,'sine',.04];
+    o.frequency.value=cfg[0];o.type=cfg[1];g.gain.value=cfg[2];
+    o.start();o.stop(actx.currentTime+.12);
+  }catch(e){}
+}
+
+// ───── BG Animation ─────
+!function(){
+  const cv=$('#bgc'),cx=cv.getContext('2d');let w,h;
+  const pts=[];
+  function rs(){w=cv.width=innerWidth;h=cv.height=innerHeight}
+  rs();addEventListener('resize',rs);
+  for(let i=0;i<45;i++)pts.push({x:Math.random()*2e3,y:Math.random()*2e3,r:Math.random()*1.4+.4,
+    dx:(Math.random()-.5)*.25,dy:(Math.random()-.5)*.25,a:Math.random()*.25+.08});
+  !function draw(){
+    cx.clearRect(0,0,w,h);
+    pts.forEach(p=>{
+      p.x+=p.dx;p.y+=p.dy;
+      if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;
+      cx.beginPath();cx.arc(p.x,p.y,p.r,0,6.28);
+      cx.fillStyle=`rgba(0,222,255,${p.a})`;cx.fill();
+    });
+    requestAnimationFrame(draw);
+  }();
+}();
+
+// ───── Screen / Modal ─────
+function showS(id){$$('.scr').forEach(s=>s.classList.remove('on'));$(`#${id}`).classList.add('on')}
+function showM(n){$(`#mo${n}`).classList.add('on')}
+function hideM(n){$(`#mo${n}`).classList.remove('on')}
+
+function setDiff(el){
+  G.diff=el.dataset.d;
+  $$('.db').forEach(b=>b.classList.toggle('on',b===el));
+}
+
+// ───── Piece element ─────
+function mkEl(pc,show){
+  const d=D(pc.t),ip=pc.p===1,ir=G.rev.has(pc.id);
+  const el=document.createElement('div');
+  el.className='pc '+(ip?'pp':'ap');
+  if(!ip&&!show&&!ir)el.classList.add('hd');
+  if(ir)el.classList.add('rev');
+  if(pc.t==='bomb')el.classList.add('bm');
+  if(pc.t==='flag')el.classList.add('fl');
+  if(pc.t==='bomb'||pc.t==='flag')el.classList.add('im');
+  if(show||ip||ir){
+    el.innerHTML=`<span class="rk">${d.ic}</span><span class="lb">${d.a}</span>`;
+  }else{
+    el.innerHTML=`<span class="rk" style="font-size:calc(var(--ps)*.42)">?</span>`;
+  }
+  el.dataset.id=pc.id;
+  return el;
+}
+
+// ================================================================
+// SETUP PHASE
+// ================================================================
+function startSetup(){
+  uid=0;
+  G.sB=Array.from({length:R},()=>Array(C).fill(null));
+  G.sP=genPieces(1);
+  G.sSel=null;
+  autoArr();
+  showS('setup');
+}
+
+function autoArr(){
+  G.sB=Array.from({length:R},()=>Array(C).fill(null));
+  const pcs=[...G.sP];
+  // Available positions for player (rows 6-9)
+  const pos=[];for(let r=6;r<=9;r++)for(let c=0;c<10;c++)if(!isLk(r,c))pos.push([r,c]);
+  // Place flag in back row
+  const fi=pcs.findIndex(p=>p.t==='flag');
+  const flag=pcs.splice(fi,1)[0];
+  const bpos=pos.filter(p=>p[0]===9);
+  const fp=bpos[0|Math.random()*bpos.length];
+  G.sB[fp[0]][fp[1]]=flag;
+  pos.splice(pos.findIndex(p=>p[0]===fp[0]&&p[1]===fp[1]),1);
+  // Bombs around flag
+  const bombs=[];
+  for(let i=pcs.length-1;i>=0;i--)if(pcs[i].t==='bomb')bombs.push(pcs.splice(i,1)[0]);
+  const adj=pos.filter(p=>Math.abs(p[0]-fp[0])<=1&&Math.abs(p[1]-fp[1])<=1&&p[0]>=6);
+  bombs.forEach(b=>{
+    if(!adj.length)return;
+    const idx=0|Math.random()*adj.length;
+    const ap=adj.splice(idx,1)[0];
+    G.sB[ap[0]][ap[1]]=b;
+    pos.splice(pos.findIndex(p=>p[0]===ap[0]&&p[1]===ap[1]),1);
+  });
+  // Rest random
+  shuf(pos);shuf(pcs);
+  pcs.forEach((p,i)=>{if(i<pos.length)G.sB[pos[i][0]][pos[i][1]]=p});
+  rSB();rST();
+  snd('pl');
+}
+
+function shuffleArr(){
+  const pcs=[];
+  for(let r=6;r<=9;r++)for(let c=0;c<10;c++){
+    if(G.sB[r][c]){pcs.push(G.sB[r][c]);G.sB[r][c]=null}
+  }
+  const pos=[];for(let r=6;r<=9;r++)for(let c=0;c<10;c++)if(!isLk(r,c))pos.push([r,c]);
+  shuf(pos);shuf(pcs);
+  pcs.forEach((p,i)=>{if(i<pos.length)G.sB[pos[i][0]][pos[i][1]]=p});
+  G.sSel=null;
+  rSB();rST();snd('pl');
+}
+
+function rSB(){
+  const b=$('#sb');b.innerHTML='';
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const cl=document.createElement('div');
+    cl.className='cl';cl.dataset.r=r;cl.dataset.c=c;
+    if(isLk(r,c)){cl.classList.add('lk')}
+    else{
+      cl.addEventListener('click',()=>setupClick(r,c));
+      const pc=G.sB[r][c];
+      if(pc&&r>=6){
+        const el=mkEl(pc,true);
+        if(G.sSel&&G.sSel.id===pc.id)el.classList.add('sel');
+        cl.appendChild(el);
+      }
+    }
+    b.appendChild(cl);
+  }
+}
+
+function rST(){
+  const tray=$('#stray');
+  const onB=new Set();
+  for(let r=6;r<=9;r++)for(let c=0;c<10;c++)if(G.sB[r][c])onB.add(G.sB[r][c].id);
+  const rem=G.sP.filter(p=>!onB.has(p.id));
+  tray.innerHTML='';
+  if(!rem.length){tray.innerHTML='<span class="stray-hint">✓ Todas as peças posicionadas!</span>';return}
+  const grp={};
+  rem.forEach(p=>{if(!grp[p.t])grp[p.t]={p,n:0};grp[p.t].n++});
+  Object.values(grp).forEach(({p,n})=>{
+    const el=document.createElement('div');
+    el.className='tp'+(G.sSel&&G.sSel.id===p.id?' sel':'');
+    el.textContent=p.a;
+    el.title=`${p.l} (x${n})`;
+    el.addEventListener('click',()=>{G.sSel=p;rSB();rST()});
+    tray.appendChild(el);
+  });
+}
+
+function setupClick(r,c){
+  if(r<6||r>9||isLk(r,c))return;
+  const ex=G.sB[r][c];
+  if(G.sSel){
+    if(ex){
+      const op=findSP(G.sSel.id);
+      if(op)G.sB[op[0]][op[1]]=ex;
+    }else{
+      const op=findSP(G.sSel.id);
+      if(op)G.sB[op[0]][op[1]]=null;
+    }
+    G.sB[r][c]=G.sSel;
+    G.sSel=null;snd('pl');
+  }else if(ex){
+    G.sSel=ex;snd('sel');
+  }
+  rSB();rST();
+}
+
+function findSP(id){
+  for(let r=6;r<=9;r++)for(let c=0;c<10;c++)if(G.sB[r][c]&&G.sB[r][c].id===id)return[r,c];
+  return null;
+}
+
+function confirmSetup(){
+  let cnt=0;
+  for(let r=6;r<=9;r++)for(let c=0;c<10;c++)if(G.sB[r][c])cnt++;
+  if(cnt<40){alert('Posicione todas as 40 peças! Use "Auto" para arrumar rapidamente.');return}
+  G.board=Array.from({length:R},()=>Array(C).fill(null));
+  for(let r=6;r<=9;r++)for(let c=0;c<10;c++)G.board[r][c]=G.sB[r][c];
+  setupAI();
+  G.phase='play';G.cur=1;G.cap={1:[],2:[]};G.rev=new Set();
+  G.mc=0;G.ncapt=0;G.last=null;G.sel=null;G.vm=[];G.busy=false;
+  showS('game');
+  $('#log').innerHTML='';
+  rGB();updUI();
+  addLog('⚔ Combate iniciado! Posicione-se para a batalha.');
+}
+
+// ───── AI Setup ─────
+function setupAI(){
+  const pcs=[];DEFS.forEach(d=>{for(let i=0;i<d.n;i++)pcs.push(mkPiece(d.t,2))});
+  const pos=[];for(let r=0;r<=3;r++)for(let c=0;c<10;c++)if(!isLk(r,c))pos.push([r,c]);
+  // Flag in back row
+  const fi=pcs.findIndex(p=>p.t==='flag');
+  const flag=pcs.splice(fi,1)[0];
+  const bp=pos.filter(p=>p[0]===0);
+  const fp=bp[0|Math.random()*bp.length];
+  G.board[fp[0]][fp[1]]=flag;
+  pos.splice(pos.findIndex(p=>p[0]===fp[0]&&p[1]===fp[1]),1);
+  // Bombs around flag
+  const bombs=[];
+  for(let i=pcs.length-1;i>=0;i--)if(pcs[i].t==='bomb')bombs.push(pcs.splice(i,1)[0]);
+  const adj=pos.filter(p=>Math.abs(p[0]-fp[0])<=1&&Math.abs(p[1]-fp[1])<=1);
+  bombs.forEach(b=>{
+    if(!adj.length)return;
+    const idx=0|Math.random()*adj.length;
+    const ap=adj.splice(idx,1)[0];
+    G.board[ap[0]][ap[1]]=b;
+    pos.splice(pos.findIndex(p=>p[0]===ap[0]&&p[1]===ap[1]),1);
+  });
+  shuf(pos);shuf(pcs);
+  pcs.forEach((p,i)=>{if(i<pos.length)G.board[pos[i][0]][pos[i][1]]=p});
+}
+
+// ================================================================
+// GAME RENDERING
+// ================================================================
+function rGB(){
+  const b=$('#gb');b.innerHTML='';
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const cl=document.createElement('div');
+    cl.className='cl';cl.dataset.r=r;cl.dataset.c=c;
+    if(isLk(r,c)){
+      cl.classList.add('lk');
+    }else{
+      cl.addEventListener('click',()=>gameClick(r,c));
+      // Valid moves
+      const isV=G.vm.some(m=>m[0]===r&&m[1]===c);
+      const tg=G.board[r][c];
+      if(isV){
+        cl.classList.add(tg&&tg.p!==G.cur?'va':'vm');
+      }
+      // Last move
+      if(G.last&&((r===G.last.f[0]&&c===G.last.f[1])||(r===G.last.t[0]&&c===G.last.t[1])))cl.classList.add('lm');
+    }
+    const pc=G.board[r][c];
+    if(pc){
+      const el=mkEl(pc,false);
+      if(G.sel&&G.sel.id===pc.id)el.classList.add('sel');
+      cl.appendChild(el);
+    }
+    b.appendChild(cl);
+  }
+}
+
+function updUI(){
+  const dot=$('#tdot'),txt=$('#ttxt');
+  if(G.cur===1){dot.className='td p1';txt.textContent='Sua vez'}
+  else{dot.className='td p2';txt.innerHTML='<span class="think"><span></span><span></span><span></span></span>&nbsp;Pensando...'}
+  $('#sc1').textContent=G.cap[1].length;
+  $('#sc2').textContent=G.cap[2].length;
+  $('#smv').textContent=G.mc;
+  rCap();
+}
+
+function rCap(){
+  ['A','P'].forEach((ch,pi)=>{
+    const el=$(`#cap${ch}`);el.innerHTML='';
+    G.cap[pi+1].forEach(p=>{
+      const d=D(p.t);
+      const c=document.createElement('div');
+      c.className='cchip';
+      c.style.background=pi===0?'linear-gradient(145deg,#38142a,#280c1a)':'linear-gradient(145deg,#162040,#0c1528)';
+      c.style.color=pi===0?'var(--red)':'var(--c1)';
+      c.textContent=d.a;c.title=d.l;
+      el.appendChild(c);
+    });
+  });
+}
+
+function addLog(msg){
+  const l=$('#log'),e=document.createElement('div');
+  e.className='le';e.textContent=msg;l.appendChild(e);
+  l.scrollTop=l.scrollHeight;
+  while(l.children.length>60)l.removeChild(l.firstChild);
+}
+
+// ================================================================
+// GAME LOGIC
+// ================================================================
+function gameClick(r,c){
+  if(G.phase!=='play'||G.cur!==1||G.busy)return;
+  const pc=G.board[r][c];
+  // Click on valid move
+  if(G.sel&&G.vm.some(m=>m[0]===r&&m[1]===c)){
+    doMove(G.sel,r,c);
+    return;
+  }
+  // Select own movable piece
+  if(pc&&pc.p===1&&pc.t!=='bomb'&&pc.t!=='flag'){
+    G.sel=pc;G.vm=getVM(r,c);snd('sel');rGB();return;
+  }
+  // Deselect
+  G.sel=null;G.vm=[];rGB();
+}
+
+function getVM(r,c){
+  const pc=G.board[r][c];
+  if(!pc||pc.t==='bomb'||pc.t==='flag')return[];
+  const mv=[],dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+  const mx=pc.t==='scout'?9:1;
+  for(const[dr,dc]of dirs){
+    for(let d=1;d<=mx;d++){
+      const nr=r+dr*d,nc=c+dc*d;
+      if(!inB(nr,nc)||isLk(nr,nc))break;
+      const tg=G.board[nr][nc];
+      if(tg){if(tg.p!==pc.p)mv.push([nr,nc]);break}
+      mv.push([nr,nc]);
+    }
+  }
+  return mv;
+}
+
+function findPC(id){
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(G.board[r][c]&&G.board[r][c].id===id)return[r,c];
+  return null;
+}
+
+async function doMove(pc,tr,tc){
+  G.busy=true;
+  const fp=findPC(pc.id);
+  if(!fp){G.busy=false;return}
+  const[fr,fc]=fp;
+  const tg=G.board[tr][tc];
+  G.board[fr][fc]=null;
+  if(tg){
+    G.ncapt=0;
+    // Show combat
+    await showCombat(pc,tg);
+    const res=combat(pc,tg);
+    const aD=D(pc.t),dD=D(tg.t);
+    if(res==='aw'){
+      G.board[tr][tc]=pc;
+      G.cap[pc.p].push(tg);
+      G.rev.delete(tg.id);
+      addLog(`${pc.p===1?'Você':'IA'}: ${aD.l} derrotou ${dD.l}!`);
+      if(tg.t==='flag'){gameOver(pc.p);G.busy=false;return}
+    }else if(res==='dw'){
+      G.board[tr][tc]=tg;
+      G.cap[tg.p].push(pc);
+      G.rev.delete(pc.id);
+      addLog(`${tg.p===1?'Você':'IA'}: ${dD.l} derrotou ${aD.l}!`);
+      if(pc.t==='flag'){gameOver(tg.p);G.busy=false;return}
+    }else{
+      G.board[tr][tc]=null;
+      G.cap[1].push(pc.p===1?pc:tg);
+      G.cap[2].push(pc.p===2?pc:tg);
+      G.rev.delete(pc.id);G.rev.delete(tg.id);
+      addLog(`Empate! ${aD.l} e ${dD.l} se eliminaram.`);
+    }
+    G.mc++;
+  }else{
+    G.board[tr][tc]=pc;
+    G.ncapt++;G.mc++;
+    const dD=D(pc.t);
+    if(pc.p===1)addLog(`Você moveu ${dD.l} para ${String.fromCharCode(65+tc)}${R-tr}`);
+    else addLog(`IA moveu uma peça para ${String.fromCharCode(65+tc)}${R-tr}`);
+  }
+  G.last={f:[fr,fc],t:[tr,tc]};
+  G.sel=null;G.vm=[];
+  rGB();updUI();
+  // Draw check
+  if(G.ncapt>=120){gameOver(0);G.busy=false;return}
+  // Switch turn
+  G.cur=G.cur===1?2:1;
+  updUI();
+  // Check if next player has moves
+  if(!hasMoves(G.cur)){
+    gameOver(G.cur===1?2:1);
+    G.busy=false;return;
+  }
+  if(G.cur===2){
+    await wait(500+Math.random()*700);
+    await aiTurn();
+  }
+  G.busy=false;
+}
+
+function combat(atk,def){
+  if(def.t==='flag')return'aw';
+  if(def.t==='bomb')return atk.t==='miner'?'aw':'dw';
+  if(atk.t==='spy'&&def.t==='marshal')return'aw';
+  if(atk.rk>def.rk)return'aw';
+  if(atk.rk<def.rk)return'dw';
+  return'bd'; // both die
+}
+
+async function showCombat(atk,def){
+  snd('atk');
+  const aD=D(atk.t),dD=D(def.t);
+  const ap=atk.p===1,bp=def.p===1;
+  G.rev.add(atk.id);G.rev.add(def.id);
+  $('#cL').innerHTML=`
+    <div class="ci" style="background:linear-gradient(145deg,${ap?'#162444,#0b1428':'#38142a,#280c1a'});
+      border:2px solid ${ap?'rgba(0,222,255,.5)':'rgba(244,63,94,.5)'};color:${ap?'var(--c1)':'var(--red)'}">${aD.ic}</div>
+    <div class="cn" style="color:${ap?'var(--c1)':'var(--red)'}">${aD.l}</div>
+    <div class="cr">Força ${atk.rk>0?atk.rk:(atk.t==='bomb'?'💣':'⚑')}</div>`;
+  $('#cR').innerHTML=`
+    <div class="ci" style="background:linear-gradient(145deg,${bp?'#162444,#0b1428':'#38142a,#280c1a'});
+      border:2px solid ${bp?'rgba(0,222,255,.5)':'rgba(244,63,94,.5)'};color:${bp?'var(--c1)':'var(--red)'}">${dD.ic}</div>
+    <div class="cn" style="color:${bp?'var(--c1)':'var(--red)'}">${dD.l}</div>
+    <div class="cr">Força ${def.rk>0?def.rk:(def.t==='bomb'?'💣':'⚑')}</div>`;
+  $('#covl').classList.add('on');
+  await wait(1600);
+  $('#covl').classList.remove('on');
+  await wait(200);
+}
+
+function hasMoves(p){
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const pc=G.board[r][c];
+    if(!pc||pc.p!==p||pc.t==='bomb'||pc.t==='flag')continue;
+    if(getVM(r,c).length>0)return true;
+  }
+  return false;
+}
+
+// ================================================================
+// AI
+// ================================================================
+async function aiTurn(){
+  if(G.phase!=='play')return;
+  const moves=allAIMoves();
+  if(!moves.length){gameOver(1);return}
+  const mv=pickAI(moves);
+  await doMove(G.board[mv.fr][mv.fc],mv.tr,mv.tc);
+}
+
+function allAIMoves(){
+  const mv=[];
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const pc=G.board[r][c];
+    if(!pc||pc.p!==2||pc.t==='bomb'||pc.t==='flag')continue;
+    getVM(r,c).forEach(([tr,tc])=>mv.push({fr:r,fc:c,tr,tc,pc}));
+  }
+  return mv;
+}
+
+function pickAI(moves){
+  const d=G.diff;
+  const scored=moves.map(m=>{
+    let s=0;
+    const tg=G.board[m.tr][m.tc];
+    const pc=m.pc;
+    const tgKnown=tg?G.rev.has(tg.id):false;
+    if(tg){
+      if(tgKnown){
+        const res=combat(pc,tg);
+        if(res==='aw'){s+=120+tg.rk*12;if(tg.t==='flag')s+=9999}
+        else if(res==='dw')s-=100+pc.rk*10;
+        else s+=tg.rk*6-pc.rk*6;
+      }else{
+        // Unknown target
+        if(pc.t==='scout')s+=25;
+        else if(pc.rk<=3)s+=15;
+        else if(pc.rk>=8)s-=35;
+        s+=22;
+      }
+      // Spy special
+      if(pc.t==='spy'){
+        if(tgKnown&&tg.t==='marshal')s+=600;
+        else s-=40;
+      }
+      // Miner → bomb
+      if(pc.t==='miner'&&tgKnown&&tg.t==='bomb')s+=250;
+    }
+    // Advance
+    s+=m.tr*2.5;
+    // Center
+    s+=(5-Math.abs(m.tc-4.5))*1.2;
+    // Don't retreat much
+    if(m.tr<m.fr)s-=4;
+    // Variety
+    s+=Math.random()*12;
+    // Difficulty
+    if(d==='easy')s=Math.random()*60;
+    else if(d==='hard'){
+      if(tg&&!tgKnown&&pc.rk>=7)s-=35;
+      // Keep defenders near flag
+      const fp=findFlag(2);
+      if(fp){
+        const dist=Math.abs(m.fr-fp[0])+Math.abs(m.fc-fp[1]);
+        if(dist<=2&&pc.rk>=5)s-=18;
+      }
+      // Reward advancing miners toward enemy territory
+      if(pc.t==='miner'&&m.tr>=5)s+=15;
+      // Protect spy
+      if(pc.t==='spy')s-=20;
+    }
+    return{...m,s};
+  });
+  scored.sort((a,b)=>b.s-a.s);
+  const topN=d==='easy'?scored.length:(d==='hard'?2:Math.min(4,scored.length));
+  const top=scored.slice(0,Math.max(1,topN));
+  return top[0|Math.random()*top.length];
+}
+
+function findFlag(p){
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++)
+    if(G.board[r][c]&&G.board[r][c].p===p&&G.board[r][c].t==='flag')return[r,c];
+  return null;
+}
+
+// ================================================================
+// GAME OVER
+// ================================================================
+function gameOver(w){
+  G.phase='over';
+  // Reveal all
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++)
+    if(G.board[r][c])G.rev.add(G.board[r][c].id);
+  rGB();
+  const ic=$('#goI'),ti=$('#goT'),tx=$('#goP');
+  if(w===1){snd('win');ic.textContent='🏆';ti.textContent='Vitória!';ti.style.color='var(--gold)';
+    tx.textContent=`Você capturou a Bandeira inimiga em ${G.mc} jogadas! Estratégia brilhante!`}
+  else if(w===2){snd('lose');ic.textContent='💀';ti.textContent='Derrota';ti.style.color='var(--red)';
+    tx.textContent='O inimigo capturou sua Bandeira. Recomponha sua estratégia e tente novamente!'}
+  else{ic.textContent='🤝';ti.textContent='Empate';ti.style.color='var(--dim)';
+    tx.textContent='Impasse! Nenhuma captura em muitos turnos. A guerra chegou a um impasse.'}
+  $('#mogo').classList.add('on');
+}
+
+function restart(){$('#mogo').classList.remove('on');startSetup()}
+function toMenu(){$('#mogo').classList.remove('on');showS('splash')}
+function quitConfirm(){hideM('quit');toMenu()}
+
+// ───── INIT ─────
+showS('splash');
+</script>
+</body>
+</html>
