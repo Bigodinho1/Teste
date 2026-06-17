@@ -34,13 +34,13 @@
             justify-content: center;
             overflow: hidden;
             touch-action: none;
+            padding: 10px;
         }
 
         .game-container {
             position: relative;
             width: 100%;
             max-width: 1200px;
-            padding: 10px;
         }
 
         .header {
@@ -76,10 +76,14 @@
         .player-score {
             text-align: center;
             color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
         }
 
         .player-score.active {
             animation: pulse 1s infinite;
+            background: rgba(0, 255, 255, 0.1);
         }
 
         @keyframes pulse {
@@ -109,6 +113,7 @@
                 0 10px 30px rgba(0, 0, 0, 0.5),
                 inset 0 0 50px rgba(0, 0, 0, 0.3),
                 0 0 30px rgba(74, 40, 16, 0.5);
+            width: 100%;
         }
 
         .table-border {
@@ -116,6 +121,7 @@
             border-radius: 15px;
             padding: clamp(8px, 2vw, 20px);
             box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 100%;
         }
 
         #poolTable {
@@ -181,6 +187,7 @@
             overflow: hidden;
             border: 2px solid var(--neon-blue);
             display: none;
+            z-index: 100;
         }
 
         .power-bar {
@@ -212,6 +219,7 @@
             border: 3px solid var(--neon-blue);
             box-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
             animation: slideIn 0.5s ease;
+            max-width: 90%;
         }
 
         @keyframes slideIn {
@@ -267,11 +275,26 @@
             font-size: 0.9rem;
             border-left: 4px solid var(--neon-blue);
             display: none;
+            z-index: 200;
+        }
+
+        .turn-indicator {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            border: 2px solid var(--neon-blue);
+            z-index: 50;
         }
 
         @media (max-width: 768px) {
             .game-container {
-                padding: 5px;
+                padding: 0;
             }
             
             .scoreboard {
@@ -286,16 +309,6 @@
             .btn {
                 padding: 8px 16px;
             }
-        }
-
-        .ball-indicator {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 100;
-            box-shadow: 0 0 10px currentColor;
         }
     </style>
 </head>
@@ -315,10 +328,12 @@
             <div class="player-score active" id="player1Score">
                 <h3>JOGADOR 1</h3>
                 <div class="score" id="score1">0</div>
+                <div id="player1Type" style="font-size: 0.8rem; margin-top: 5px;"></div>
             </div>
             <div class="player-score" id="player2Score">
                 <h3 id="player2Name">JOGADOR 2</h3>
                 <div class="score" id="score2">0</div>
+                <div id="player2Type" style="font-size: 0.8rem; margin-top: 5px;"></div>
             </div>
         </div>
 
@@ -326,6 +341,7 @@
             <div class="table-border">
                 <canvas id="poolTable"></canvas>
             </div>
+            <div class="turn-indicator" id="turnIndicator">Turno: Jogador 1</div>
         </div>
 
         <div class="power-meter" id="powerMeter">
@@ -342,15 +358,15 @@
         <div class="message-box">
             <h2 id="messageTitle">Vitória!</h2>
             <p id="messageText">Jogador 1 venceu!</p>
-            <button class="btn" onclick="closeMessage()">Continuar</button>
+            <button class="btn" onclick="closeMessageAndReset()">Jogar Novamente</button>
         </div>
     </div>
 
     <div class="tutorial" id="tutorial">
         <strong>Como Jogar:</strong><br>
-        🎯 Arraste para mirar<br>
+        🎯 Arraste para trás para mirar<br>
         💪 Solte para tacar<br>
-        ⚪ Encaçape todas as suas bolas<br>
+        ⚪ Encaçape suas bolas (sólidas ou listradas)<br>
         🏆 Faça a bola 8 por último!
     </div>
 
@@ -369,38 +385,44 @@
         let dragStart = { x: 0, y: 0 };
         let dragCurrent = { x: 0, y: 0 };
         let power = 0;
-        let isAiming = false;
         let soundEnabled = true;
         let gameRunning = false;
         let ballRadius;
         let tableWidth;
         let tableHeight;
         let pocketRadius;
+        let player1Type = null; // 'solid' ou 'stripe'
+        let player2Type = null;
+        let firstShotMade = false; // Primeira tacada feita para definir tipos
+        let ballsMoving = false;
+        let turnEnded = false;
+        let foulOnCue = false;
         
-        // Constantes de Física
+        // Constantes de Física Aprimoradas
         const FRICTION = 0.985;
         const WALL_BOUNCE = 0.7;
-        const BALL_BOUNCE = 0.9;
-        const MIN_VELOCITY = 0.1;
+        const BALL_BOUNCE = 0.95;
+        const MIN_VELOCITY = 0.15;
+        const MAX_POWER = 30;
         
         // Cores das Bolas
         const BALL_COLORS = [
             '#ffffff', // Bola branca
             '#ffd700', // 1 - Amarela
-            '#0000ff', // 2 - Azul
-            '#ff0000', // 3 - Vermelha
-            '#800080', // 4 - Roxa
-            '#ffa500', // 5 - Laranja
-            '#008000', // 6 - Verde
-            '#800000', // 7 - Marrom
-            '#000000', // 8 - Preta
-            '#ffd700', // 9 - Amarela listrada
-            '#0000ff', // 10 - Azul listrada
-            '#ff0000', // 11 - Vermelha listrada
-            '#800080', // 12 - Roxa listrada
-            '#ffa500', // 13 - Laranja listrada
-            '#008000', // 14 - Verde listrada
-            '#800000'  // 15 - Marrom listrada
+            '#0066cc', // 2 - Azul
+            '#cc0000', // 3 - Vermelha
+            '#660066', // 4 - Roxa
+            '#ff8800', // 5 - Laranja
+            '#006600', // 6 - Verde
+            '#660000', // 7 - Marrom
+            '#111111', // 8 - Preta
+            '#fff4cc', // 9 - Amarela listrada
+            '#cce5ff', // 10 - Azul listrada
+            '#ffcccc', // 11 - Vermelha listrada
+            '#e5ccff', // 12 - Roxa listrada
+            '#ffe5cc', // 13 - Laranja listrada
+            '#cce5cc', // 14 - Verde listrada
+            '#ffcccc'  // 15 - Marrom listrada
         ];
 
         // Inicialização
@@ -413,7 +435,7 @@
         }
 
         function resizeCanvas() {
-            const wrapper = canvas.parentElement;
+            const wrapper = document.querySelector('.table-border');
             const maxWidth = Math.min(wrapper.clientWidth - 40, 1000);
             const aspectRatio = 2 / 1;
             
@@ -421,16 +443,16 @@
             tableHeight = maxWidth / aspectRatio;
             
             // Ajustar para telas muito pequenas
-            if (tableHeight > window.innerHeight * 0.6) {
-                tableHeight = window.innerHeight * 0.6;
+            if (tableHeight > window.innerHeight * 0.5) {
+                tableHeight = window.innerHeight * 0.5;
                 tableWidth = tableHeight * aspectRatio;
             }
             
             canvas.width = tableWidth;
             canvas.height = tableHeight;
             
-            ballRadius = Math.max(8, tableWidth / 60);
-            pocketRadius = ballRadius * 2.2;
+            ballRadius = Math.max(6, tableWidth / 65);
+            pocketRadius = ballRadius * 2.5;
             
             if (!gameRunning) {
                 resetGame();
@@ -451,9 +473,14 @@
             balls = [];
             scores = { 1: 0, 2: 0 };
             currentPlayer = 1;
+            player1Type = null;
+            player2Type = null;
+            firstShotMade = false;
             updateScoreboard();
             setupBalls();
             gameRunning = true;
+            turnEnded = false;
+            updateTurnIndicator();
             draw();
         }
 
@@ -468,32 +495,26 @@
                 color: BALL_COLORS[0],
                 number: 0,
                 type: 'cue',
-                player: null,
                 sunk: false
             };
             balls.push(cueBall);
 
-            // Triângulo de bolas
+            // Triângulo de bolas - formação clássica
             const startX = tableWidth * 0.75;
             const startY = tableHeight / 2;
             const rows = 5;
-            let ballNumber = 1;
+            
+            // Ordem específica para garantir bola 8 no centro
+            const ballOrder = [1, 9, 2, 10, 8, 3, 11, 7, 14, 4, 13, 6, 12, 5, 15];
+            let ballIndex = 0;
             
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col <= row; col++) {
-                    const x = startX + row * ballRadius * 1.75;
+                    const x = startX + row * ballRadius * 1.732;
                     const y = startY - (row * ballRadius) + (col * ballRadius * 2);
                     
-                    // Garantir que a bola 8 esteja no meio
-                    let num = ballNumber;
-                    if (row === 2 && col === 1) {
-                        num = 8;
-                    } else if (num === 8) {
-                        num = ballNumber;
-                        ballNumber++;
-                    } else {
-                        ballNumber++;
-                    }
+                    const num = ballOrder[ballIndex] || (ballIndex + 1);
+                    ballIndex++;
                     
                     balls.push({
                         x: x,
@@ -504,7 +525,6 @@
                         color: BALL_COLORS[num],
                         number: num,
                         type: num === 8 ? 'black' : (num <= 7 ? 'solid' : 'stripe'),
-                        player: null,
                         sunk: false
                     });
                 }
@@ -524,16 +544,28 @@
         }
 
         function handleInputStart(e) {
-            if (!gameRunning || isMoving()) return;
+            if (!gameRunning || ballsMoving) return;
             if (gameMode === 'pvc' && currentPlayer === 2) return;
             
             const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            const x = (clientX - rect.left) * scaleX;
+            const y = (clientY - rect.top) * scaleY;
             
             // Verificar se clicou perto da bola branca
             const dist = Math.hypot(x - cueBall.x, y - cueBall.y);
-            if (dist < ballRadius * 3) {
+            if (dist < ballRadius * 4) {
                 isDragging = true;
                 dragStart = { x: cueBall.x, y: cueBall.y };
                 dragCurrent = { x, y };
@@ -545,14 +577,26 @@
             if (!isDragging) return;
             
             const rect = canvas.getBoundingClientRect();
-            dragCurrent.x = (e.clientX - rect.left) * (canvas.width / rect.width);
-            dragCurrent.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
             
-            // Calcular poder
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            dragCurrent.x = (clientX - rect.left) * scaleX;
+            dragCurrent.y = (clientY - rect.top) * scaleY;
+            
+            // Calcular poder baseado na distância do arrasto
             const dx = dragStart.x - dragCurrent.x;
             const dy = dragStart.y - dragCurrent.y;
             const distance = Math.hypot(dx, dy);
-            power = Math.min(distance / (tableWidth * 0.3), 1);
+            power = Math.min(distance / (tableWidth * 0.25), 1);
             
             document.getElementById('powerBar').style.width = (power * 100) + '%';
             draw();
@@ -574,14 +618,12 @@
 
         function handleTouchStart(e) {
             e.preventDefault();
-            const touch = e.touches[0];
-            handleInputStart({ clientX: touch.clientX, clientY: touch.clientY });
+            handleInputStart(e);
         }
 
         function handleTouchMove(e) {
             e.preventDefault();
-            const touch = e.touches[0];
-            handleInputMove({ clientX: touch.clientX, clientY: touch.clientY });
+            handleInputMove(e);
         }
 
         function handleTouchEnd(e) {
@@ -593,20 +635,26 @@
             const dx = dragStart.x - dragCurrent.x;
             const dy = dragStart.y - dragCurrent.y;
             const angle = Math.atan2(dy, dx);
-            const speed = power * 25;
+            const speed = Math.min(power * MAX_POWER, MAX_POWER);
             
             cueBall.vx = Math.cos(angle) * speed;
             cueBall.vy = Math.sin(angle) * speed;
             
+            firstShotMade = true;
             playSound('shoot');
+            
+            // Iniciar loop de física
+            if (!ballsMoving) {
+                ballsMoving = true;
+                turnEnded = false;
+                updatePhysics();
+            }
         }
 
-        function isMoving() {
-            return balls.some(ball => Math.hypot(ball.vx, ball.vy) > MIN_VELOCITY);
-        }
-
-        function update() {
+        function updatePhysics() {
             if (!gameRunning) return;
+            
+            let anyMoving = false;
             
             // Atualizar posições
             balls.forEach(ball => {
@@ -623,6 +671,8 @@
                 if (Math.hypot(ball.vx, ball.vy) < MIN_VELOCITY) {
                     ball.vx = 0;
                     ball.vy = 0;
+                } else {
+                    anyMoving = true;
                 }
                 
                 // Colisão com paredes
@@ -648,7 +698,7 @@
                 }
             });
             
-            // Colisão entre bolas
+            // Colisão entre bolas - física elástica 2D
             for (let i = 0; i < balls.length; i++) {
                 for (let j = i + 1; j < balls.length; j++) {
                     const b1 = balls[i];
@@ -659,35 +709,44 @@
                     const dx = b2.x - b1.x;
                     const dy = b2.y - b1.y;
                     const dist = Math.hypot(dx, dy);
+                    const minDist = b1.radius + b2.radius;
                     
-                    if (dist < b1.radius + b2.radius) {
-                        // Colisão detectada
-                        const angle = Math.atan2(dy, dx);
-                        const sin = Math.sin(angle);
-                        const cos = Math.cos(angle);
+                    if (dist < minDist) {
+                        // Normalizar vetor de colisão
+                        const nx = dx / dist;
+                        const ny = dy / dist;
                         
-                        // Rotacionar velocidades
-                        const vx1 = b1.vx * cos + b1.vy * sin;
-                        const vy1 = b1.vy * cos - b1.vx * sin;
-                        const vx2 = b2.vx * cos + b2.vy * sin;
-                        const vy2 = b2.vy * cos - b2.vx * sin;
+                        // Vetor tangente
+                        const tx = -ny;
+                        const ty = nx;
                         
-                        // Trocar velocidades
-                        const vx1Final = vx2 * BALL_BOUNCE;
-                        const vx2Final = vx1 * BALL_BOUNCE;
+                        // Produto escalar tangente
+                        const dpTan1 = b1.vx * tx + b1.vy * ty;
+                        const dpTan2 = b2.vx * tx + b2.vy * ty;
                         
-                        // Rotacionar de volta
-                        b1.vx = vx1Final * cos - vy1 * sin;
-                        b1.vy = vy1 * cos + vx1Final * sin;
-                        b2.vx = vx2Final * cos - vy2 * sin;
-                        b2.vy = vy2 * cos + vx2Final * sin;
+                        // Produto escalar normal
+                        const dpNorm1 = b1.vx * nx + b1.vy * ny;
+                        const dpNorm2 = b2.vx * nx + b2.vy * ny;
                         
-                        // Separar bolas
-                        const overlap = (b1.radius + b2.radius - dist) / 2;
-                        b1.x -= overlap * Math.cos(angle);
-                        b1.y -= overlap * Math.sin(angle);
-                        b2.x += overlap * Math.cos(angle);
-                        b2.y += overlap * Math.sin(angle);
+                        // Conservação de momento (massas iguais)
+                        const m1 = 1;
+                        const m2 = 1;
+                        
+                        const momentum1 = (dpNorm1 * (m1 - m2) + 2 * m2 * dpNorm2) / (m1 + m2);
+                        const momentum2 = (dpNorm2 * (m2 - m1) + 2 * m1 * dpNorm1) / (m1 + m2);
+                        
+                        // Atualizar velocidades
+                        b1.vx = tx * dpTan1 + nx * momentum1 * BALL_BOUNCE;
+                        b1.vy = ty * dpTan1 + ny * momentum1 * BALL_BOUNCE;
+                        b2.vx = tx * dpTan2 + nx * momentum2 * BALL_BOUNCE;
+                        b2.vy = ty * dpTan2 + ny * momentum2 * BALL_BOUNCE;
+                        
+                        // Separar bolas para evitar sobreposição
+                        const overlap = (minDist - dist) / 2;
+                        b1.x -= overlap * nx;
+                        b1.y -= overlap * ny;
+                        b2.x += overlap * nx;
+                        b2.y += overlap * ny;
                         
                         playSound('collision');
                     }
@@ -697,26 +756,28 @@
             // Verificar caçapas
             checkPockets();
             
-            // Verificar se todas pararam
-            if (!isMoving() && gameRunning) {
-                setTimeout(() => {
-                    if (!isMoving() && gameRunning) {
-                        checkTurnEnd();
-                    }
-                }, 500);
+            ballsMoving = anyMoving;
+            
+            // Se todas pararam, verificar fim do turno
+            if (!ballsMoving && !turnEnded) {
+                turnEnded = true;
+                setTimeout(() => checkTurnEnd(), 500);
             }
             
             draw();
-            requestAnimationFrame(update);
+            
+            if (ballsMoving) {
+                requestAnimationFrame(updatePhysics);
+            }
         }
 
         function checkPockets() {
             const pockets = [
                 { x: 0, y: 0 },
-                { x: tableWidth / 2, y: -10 },
+                { x: tableWidth / 2, y: 0 },
                 { x: tableWidth, y: 0 },
                 { x: 0, y: tableHeight },
-                { x: tableWidth / 2, y: tableHeight + 10 },
+                { x: tableWidth / 2, y: tableHeight },
                 { x: tableWidth, y: tableHeight }
             ];
             
@@ -740,7 +801,8 @@
             playSound('pocket');
             
             if (ball.number === 0) {
-                // Bola branca encaçapada
+                // Bola branca encaçapada - falta
+                foulOnCue = true;
                 setTimeout(() => {
                     ball.sunk = false;
                     ball.x = tableWidth * 0.25;
@@ -755,78 +817,201 @@
         }
 
         function checkTurnEnd() {
-            // Lógica simples de turno
-            currentPlayer = currentPlayer === 1 ? 2 : 1;
-            updateScoreboard();
+            // Verificar quais bolas foram encaçapadas neste turno
+            const sunkBalls = balls.filter(b => b.sunk && b.number !== 0 && b.number !== 8);
             
-            if (gameMode === 'pvc' && currentPlayer === 2 && gameRunning) {
-                setTimeout(aiShot, 1000);
+            // Definir tipos de bolas na primeira encaçapada válida
+            if (firstShotMade && !player1Type && sunkBalls.length > 0) {
+                const firstBall = sunkBalls[0];
+                if (currentPlayer === 1) {
+                    player1Type = firstBall.type;
+                    player2Type = firstBall.type === 'solid' ? 'stripe' : 'solid';
+                } else {
+                    player2Type = firstBall.type;
+                    player1Type = firstBall.type === 'solid' ? 'stripe' : 'solid';
+                }
+            }
+            
+            // Verificar se jogador encaçapou bolas do seu tipo
+            let scoredValid = false;
+            if (player1Type || player2Type) {
+                const playerType = currentPlayer === 1 ? player1Type : player2Type;
+                scoredValid = sunkBalls.some(b => b.type === playerType);
+            }
+            
+            // Se não encaçapou nada, fez falta, ou não encaçapou bolas válidas, muda turno
+            if (foulOnCue || sunkBalls.length === 0 || !scoredValid) {
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                foulOnCue = false;
+            }
+            // Se encaçapou bolas válidas, continua no mesmo turno
+            
+            updateScoreboard();
+            updateTurnIndicator();
+            
+            // Se for modo vs computador e turno do computador
+            if (gameMode === 'pvc' && currentPlayer === 2 && gameRunning && !ballsMoving) {
+                setTimeout(aiShot, 1500);
             }
         }
 
         function aiShot() {
-            if (!gameRunning || currentPlayer !== 2) return;
+            if (!gameRunning || currentPlayer !== 2 || ballsMoving) return;
             
-            // IA simples: encontrar bola mais próxima e tacar
+            // IA encontra melhor tacada
             const validBalls = balls.filter(b => !b.sunk && b.number !== 0 && b.number !== 8);
             
             if (validBalls.length === 0) {
                 // Tentar bola 8
                 const blackBall = balls.find(b => b.number === 8 && !b.sunk);
                 if (blackBall) {
-                    aimAndShoot(blackBall);
+                    aimAndShoot(blackBall, 0.9);
                 }
                 return;
             }
             
-            // Escolher bola aleatória válida
-            const targetBall = validBalls[Math.floor(Math.random() * validBalls.length)];
-            aimAndShoot(targetBall);
+            // Escolher melhor bola baseada na distância e ângulo
+            let bestBall = null;
+            let bestScore = -Infinity;
+            
+            validBalls.forEach(ball => {
+                const dist = Math.hypot(ball.x - cueBall.x, ball.y - cueBall.y);
+                
+                // Verificar se há caminho livre até a bola
+                const angleToBall = Math.atan2(ball.y - cueBall.y, ball.x - cueBall.x);
+                let pathClear = true;
+                
+                // Checar obstruções
+                for (let other of balls) {
+                    if (other === cueBall || other === ball || other.sunk) continue;
+                    
+                    const distToOther = Math.hypot(other.x - cueBall.x, other.y - cueBall.y);
+                    if (distToOther < dist) {
+                        const angleToOther = Math.atan2(other.y - cueBall.y, other.x - cueBall.x);
+                        const angleDiff = Math.abs(angleToBall - angleToOther);
+                        
+                        if (angleDiff < 0.2 && distToOther < dist * 0.9) {
+                            pathClear = false;
+                            break;
+                        }
+                    }
+                }
+                
+                // Pontuar bola (mais perto = melhor, caminho livre = melhor)
+                let score = 1000 / (dist + 1);
+                if (pathClear) score *= 1.5;
+                
+                // Verificar caçapas próximas à bola alvo
+                const pockets = [
+                    { x: 0, y: 0 },
+                    { x: tableWidth / 2, y: 0 },
+                    { x: tableWidth, y: 0 },
+                    { x: 0, y: tableHeight },
+                    { x: tableWidth / 2, y: tableHeight },
+                    { x: tableWidth, y: tableHeight }
+                ];
+                
+                pockets.forEach(pocket => {
+                    const distToPocket = Math.hypot(ball.x - pocket.x, ball.y - pocket.y);
+                    if (distToPocket < 200) {
+                        score += 500 / (distToPocket + 1);
+                    }
+                });
+                
+                if (score > bestScore && pathClear) {
+                    bestScore = score;
+                    bestBall = ball;
+                }
+            });
+            
+            // Se não encontrou bola boa, escolher aleatória
+            if (!bestBall) {
+                bestBall = validBalls[Math.floor(Math.random() * validBalls.length)];
+            }
+            
+            // Adicionar erro baseado na dificuldade
+            const errorFactor = 0.05 + Math.random() * 0.1;
+            aimAndShoot(bestBall, 0.6 + Math.random() * 0.3, errorFactor);
         }
 
-        function aimAndShoot(targetBall) {
-            // Mirar na bola alvo
-            const angle = Math.atan2(targetBall.y - cueBall.y, targetBall.x - cueBall.x);
-            const distance = Math.hypot(targetBall.x - cueBall.x, targetBall.y - cueBall.y);
-            
-            // Poder baseado na distância
-            power = Math.min(0.5 + Math.random() * 0.3, 0.9);
+        function aimAndShoot(targetBall, powerLevel = 0.7, errorFactor = 0.05) {
+            // Calcular ângulo para atingir a bola alvo
+            const angleToBall = Math.atan2(targetBall.y - cueBall.y, targetBall.x - cueBall.x);
             
             // Adicionar pequeno erro
-            const errorAngle = (Math.random() - 0.5) * 0.1;
+            const errorAngle = (Math.random() - 0.5) * errorFactor;
+            const finalAngle = angleToBall + errorAngle;
             
+            // Configurar arrasto simulado
             dragStart = { x: cueBall.x, y: cueBall.y };
+            const shootDistance = powerLevel * tableWidth * 0.25;
             dragCurrent = {
-                x: cueBall.x - Math.cos(angle + errorAngle) * power * tableWidth * 0.3,
-                y: cueBall.y - Math.sin(angle + errorAngle) * power * tableWidth * 0.3
+                x: cueBall.x - Math.cos(finalAngle) * shootDistance,
+                y: cueBall.y - Math.sin(finalAngle) * shootDistance
             };
             
+            power = powerLevel;
+            
+            // Executar tacada
             shoot();
         }
 
         function checkGameEnd() {
-            const player1Balls = balls.filter(b => !b.sunk && b.player === 1).length;
-            const player2Balls = balls.filter(b => !b.sunk && b.player === 2).length;
+            // Contar bolas restantes de cada tipo
+            const solidsLeft = balls.filter(b => !b.sunk && b.type === 'solid').length;
+            const stripesLeft = balls.filter(b => !b.sunk && b.type === 'stripe').length;
             
             let winner = null;
+            let reason = '';
             
+            // Se encaçapou a bola 8 antes de limpar suas bolas = derrota
             if (currentPlayer === 1) {
-                winner = player1Balls === 0 ? 1 : 2;
+                if (player1Type === 'solid' && solidsLeft > 0) {
+                    winner = 2;
+                    reason = 'encaçapou a bola 8 muito cedo!';
+                } else if (player1Type === 'stripe' && stripesLeft > 0) {
+                    winner = 2;
+                    reason = 'encaçapou a bola 8 muito cedo!';
+                } else if ((!player1Type || solidsLeft === 0 || stripesLeft === 0)) {
+                    winner = 1;
+                    reason = 'completou todas as bolas!';
+                } else {
+                    winner = 2;
+                    reason = 'venceu!';
+                }
             } else {
-                winner = player2Balls === 0 ? 2 : 1;
+                if (player2Type === 'solid' && solidsLeft > 0) {
+                    winner = 1;
+                    reason = 'encaçapou a bola 8 muito cedo!';
+                } else if (player2Type === 'stripe' && stripesLeft > 0) {
+                    winner = 1;
+                    reason = 'encaçapou a bola 8 muito cedo!';
+                } else if ((!player2Type || solidsLeft === 0 || stripesLeft === 0)) {
+                    winner = 2;
+                    reason = 'completou todas as bolas!';
+                } else {
+                    winner = 1;
+                    reason = 'venceu!';
+                }
             }
             
             scores[winner]++;
             updateScoreboard();
             
+            const winnerName = gameMode === 'pvc' && winner === 2 ? 'Computador' : `Jogador ${winner}`;
             showMessage(
                 'Partida Finalizada!',
-                `Jogador ${winner} venceu!`,
+                `${winnerName} ${reason}`,
                 () => {
                     resetGame();
                     closeMessage();
                 }
             );
+        }
+
+        function closeMessageAndReset() {
+            closeMessage();
+            resetGame();
         }
 
         function updateScoreboard() {
@@ -835,6 +1020,23 @@
             
             document.getElementById('player1Score').classList.toggle('active', currentPlayer === 1);
             document.getElementById('player2Score').classList.toggle('active', currentPlayer === 2);
+            
+            // Mostrar tipos de bolas
+            if (firstShotMade) {
+                document.getElementById('player1Type').textContent = player1Type ? 
+                    (player1Type === 'solid' ? '🔵 Sólidas' : '⚪ Listradas') : '';
+                document.getElementById('player2Type').textContent = player2Type ? 
+                    (player2Type === 'solid' ? '🔵 Sólidas' : '⚪ Listradas') : '';
+            }
+        }
+
+        function updateTurnIndicator() {
+            const indicator = document.getElementById('turnIndicator');
+            const playerName = gameMode === 'pvc' && currentPlayer === 2 ? 'Computador' : `Jogador ${currentPlayer}`;
+            indicator.textContent = `Turno: ${playerName}`;
+            
+            // Cor diferente para cada jogador
+            indicator.style.borderColor = currentPlayer === 1 ? 'var(--neon-blue)' : 'var(--neon-pink)';
         }
 
         function draw() {
@@ -1038,7 +1240,7 @@
 
         // Iniciar jogo
         init();
-        update();
+        
     </script>
 </body>
 </html>
