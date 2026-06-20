@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>GBC ULTRA — Game Boy Color Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#fff;--accent:#00ff66;--accent2:#ff2d6b;--accent3:#ffd600;--text:#f0f0f0;--text-dim:#666;--mono:'Space Mono',monospace;--body:'DM Mono',monospace;--shadow:4px 4px 0 var(--border);--bw:3px}
+*{margin:0;padding:0;box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{font-family:var(--body);background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.03;mix-blend-mode:overlay}
+.header{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;border-bottom:var(--bw) solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:.5rem}
+.logo-icon{width:30px;height:30px;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;border:2px solid #000;font-family:var(--mono)}
+.logo h1{font-family:var(--mono);font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em}.logo h1 span{color:var(--accent)}
+.btn{font-family:var(--mono);font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.5rem .9rem;border:var(--bw) solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;box-shadow:var(--shadow);transition:all .07s;position:relative;display:inline-flex;align-items:center;gap:.35rem;white-space:nowrap;-webkit-user-select:none;user-select:none}
+.btn:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--border)}.btn:active{transform:translate(4px,4px);box-shadow:none}.btn:disabled{opacity:.35;pointer-events:none}
+.btn-accent{background:var(--accent);color:#000;border-color:#000;box-shadow:3px 3px 0 #000}.btn-accent:hover{background:#00e05a}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:1.2rem .8rem;gap:1rem;width:100%}
+.screen-section{display:flex;flex-direction:column;align-items:center;gap:.6rem;width:100%;animation:fadeUp .4s ease both}
+.screen-frame{position:relative;background:#111;padding:12px;border:4px solid var(--border);box-shadow:6px 6px 0 var(--accent),0 0 50px rgba(0,255,102,.06);max-width:420px;width:100%}
+.screen-inner{position:relative;background:#000;overflow:hidden}
+canvas#screen{display:block;width:100%;height:auto;aspect-ratio:160/144;image-rendering:pixelated;image-rendering:crisp-edges}
+.screen-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.025) 0%,transparent 50%,rgba(0,0,0,.04) 100%);pointer-events:none}
+.power-led{position:absolute;top:6px;right:8px;width:7px;height:7px;border-radius:50%;background:#333;border:1px solid #555;transition:background .3s}
+.power-led.on{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.rom-name{font-family:var(--mono);font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rom-name.active{color:var(--accent)}
+.fps{font-family:var(--mono);font-size:.55rem;color:var(--accent);position:absolute;bottom:3px;left:5px;z-index:2;opacity:.65}
+.action-bar{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;width:100%;max-width:480px;animation:fadeUp .4s .08s ease both}
+.action-bar label.btn{cursor:pointer}input[type=file]{display:none}
+.gamepad{display:none;width:100%;max-width:440px;justify-content:space-between;align-items:center;padding:.8rem .4rem;gap:.8rem;animation:fadeUp .3s ease both}
+.dpad-wrap{position:relative}.dpad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:2px}
+.dpad-btn{background:var(--surface2);border:var(--bw) solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.85rem;color:var(--text);cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .04s;touch-action:none}
+.dpad-btn:active,.dpad-btn.pressed{background:var(--accent);color:#000}
+.dpad-btn.g{grid-column:2;grid-row:1}.dpad-btn.v{grid-column:1;grid-row:2}.dpad-btn.b{grid-column:2;grid-row:2;background:#222;border-color:#444;pointer-events:none}.dpad-btn.n{grid-column:3;grid-row:2}.dpad-btn.s{grid-column:2;grid-row:3}
+.ab-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:.6rem}
+.ab-row{display:flex;gap:.6rem;transform:rotate(-18deg)}
+.ab-btn{width:54px;height:54px;border-radius:50%;border:var(--bw) solid var(--border);background:var(--accent2);color:#fff;font-family:var(--mono);font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;box-shadow:3px 3px 0 var(--border);cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:none;transition:transform .04s,box-shadow .04s}
+.ab-btn:active,.ab-btn.pressed{transform:scale(.9);box-shadow:1px 1px 0 var(--border)}
+.meta-row{display:flex;gap:.5rem;transform:rotate(-12deg)}
+.meta-btn{padding:.3rem 1rem;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--body);font-size:.55rem;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:none}
+.meta-btn:active,.meta-btn.pressed{background:var(--accent3);color:#000}
+.keyboard-hints{display:flex;flex-wrap:wrap;gap:.5rem .8rem;justify-content:center;padding:.6rem;border:2px solid #333;background:var(--surface);max-width:480px;width:100%;animation:fadeUp .4s .12s ease both}
+.hint{font-size:.6rem;color:var(--text-dim);display:flex;align-items:center;gap:.25rem}
+kbd{font-family:var(--mono);font-size:.55rem;padding:.12rem .35rem;border:2px solid var(--border);background:var(--surface2);box-shadow:2px 2px 0 var(--border);color:var(--text)}
+.toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--accent);color:#000;padding:.6rem 1.2rem;border:var(--bw) solid #000;box-shadow:3px 3px 0 #000;font-family:var(--mono);font-weight:700;font-size:.7rem;text-transform:uppercase;z-index:300;opacity:0;transition:transform .25s ease,opacity .25s ease;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.footer{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;border-top:var(--bw) solid var(--border);font-size:.55rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);background:var(--surface)}
+.footer a{color:var(--accent);text-decoration:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:480px){.logo h1{font-size:.85rem}.btn{padding:.45rem .7rem;font-size:.6rem}.screen-frame{padding:8px;border-width:3px}.dpad{grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px)}.ab-btn{width:48px;height:48px;font-size:1rem}}
+@media(min-width:769px){.gamepad{display:none!important}.keyboard-hints{display:flex}}
+@media(max-width:768px){.gamepad{display:flex}.keyboard-hints{display:none}.main{padding:.8rem .4rem;gap:.8rem}}
+@media(max-width:768px) and (orientation:landscape){body{overflow:auto}.header{padding:.3rem .6rem}.main{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr;gap:.5rem;padding:.5rem;height:auto}.screen-section{grid-column:1;grid-row:1/3}.screen-frame{max-width:none}.action-bar{grid-column:1;grid-row:3;flex-direction:column;align-items:flex-start}.gamepad{grid-column:2;grid-row:1/4;display:flex!important;flex-direction:column;justify-content:center}.keyboard-hints{display:none!important}.footer{display:none}}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="logo"><div class="logo-icon">▶</div><h1>GBC <span>ULTRA</span></h1></div>
+  <div><button class="btn" id="btnFullscreen" style="font-size:.6rem;padding:.35rem .6rem">⛶ Tela</button></div>
+</header>
+<main class="main">
+  <section class="screen-section">
+    <div class="screen-frame">
+      <div class="power-led" id="powerLed"></div>
+      <div class="screen-inner">
+        <canvas id="screen" width="160" height="144"></canvas>
+        <div class="screen-overlay"></div>
+        <div class="fps" id="fpsDisplay"></div>
+      </div>
+    </div>
+    <div class="rom-name" id="romName">Nenhuma ROM carregada — clique em Carregar ROM</div>
+  </section>
+  <section class="action-bar">
+    <label class="btn btn-accent" for="romInput">▲ Carregar ROM</label>
+    <input type="file" id="romInput" accept=".gb,.gbc,.rom,.bin">
+    <button class="btn" id="btnReset" disabled>↻ Reset</button>
+    <button class="btn" id="btnPause" disabled>❚❚ Pausar</button>
+  </section>
+  <section class="gamepad" id="gamepad">
+    <div class="dpad-wrap"><div class="dpad">
+      <button class="dpad-btn g" data-btn="2">▲</button>
+      <button class="dpad-btn v" data-btn="1">◀</button>
+      <div class="dpad-btn b"></div>
+      <button class="dpad-btn n" data-btn="0">▶</button>
+      <button class="dpad-btn s" data-btn="3">▼</button>
+    </div></div>
+    <div class="ab-wrap">
+      <div class="ab-row">
+        <button class="ab-btn" data-btn="5">B</button>
+        <button class="ab-btn" data-btn="4">A</button>
+      </div>
+      <div class="meta-row">
+        <button class="meta-btn" data-btn="6">Select</button>
+        <button class="meta-btn" data-btn="7">Start</button>
+      </div>
+    </div>
+  </section>
+  <section class="keyboard-hints">
+    <span class="hint"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> D-Pad</span>
+    <span class="hint"><kbd>Z</kbd> A</span>
+    <span class="hint"><kbd>X</kbd> B</span>
+    <span class="hint"><kbd>↵</kbd> Start</span>
+    <span class="hint"><kbd>⇧</kbd> Select</span>
+  </section>
+</main>
+<footer class="footer"><span>GBC Ultra v1.0</span><span>SM83 CPU Core</span></footer>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ===== CONSTANTS ===== */
+const FLAG_Z=0x80,FLAG_N=0x40,FLAG_H=0x20,FLAG_C=0x10;
+const DMG_PAL=[[224,248,208],[136,192,112],[52,104,86],[8,24,32]];
+const CYCLES_PER_FRAME=70224;
+
+/* ===== STATE ===== */
+let regA=0,regB=0,regC=0,regD=0,regE=0,regF=0,regH=0,regL=0,SP=0,PC=0;
+let IME=false,EI_pending=false,halted=false,doubleSpeed=false;
+let cartType=0,romData=null,romBanks=0,ramBanks=null;
+let romBankN=1,ramBankN=0,ramEn=false,mbcMode=0;
+let isGBC=false;
+let vram=new Uint8Array(0x4000),wram=new Uint8Array(0x8000);
+let oam=new Uint8Array(0xA0),io=new Uint8Array(0x80),hram=new Uint8Array(0x7F),ieReg=0;
+let vbk=0,svbk=1,bgPal=new Uint8Array(64),objPal=new Uint8Array(64);
+let hdmaActive=false,hdmaSrc=0,hdmaDst=0,hdmaLen=0;
+let screenBuf,ppuCycles=0,ppuMode=2,winLineCnt=0,frameReady=false;
+let divCounter=0,timaCounter=0;
+let joypad=0x00;
+let canvas,ctx,imgData;
+let running=false,paused=false,lastFrameTime=0,fpsArr=[];
+
+/* ===== MEMORY ===== */
+function getROMBank(){
+  if(!cartType)return 0;
+  let b=romBankN;
+  if(cartType<=3){if(!b)b=1;if(!mbcMode)b|=(ramBankN<<5);}
+  else if(cartType<=0x13){if(!b)b=1;}
+  else{b=romBankN;}
+  return b%(romBanks||1);
+}
+function getRAMBank(){
+  if(cartType<=3)return mbcMode?(ramBankN&3):0;
+  return ramBankN%4;
+}
+function readByte(a){
+  a&=0xFFFF;
+  if(a<0x4000)return romData?romData[a]:0xFF;
+  if(a<0x8000){let b=getROMBank();let o=b*0x4000+(a-0x4000);return romData&&o<romData.length?romData[o]:0xFF;}
+  if(a<0xA000)return vram[(isGBC?(vbk&1)*0x2000:0)+(a-0x8000)];
+  if(a<0xC000){if(!ramEn||!ramBanks)return 0xFF;return ramBanks[getRAMBank()*0x2000+(a-0xA000)];}
+  if(a<0xD000)return wram[a-0xC000];
+  if(a<0xE000)return wram[((isGBC?((svbk&7)||1):1)*0x1000)+(a-0xD000)];
+  if(a<0xFE00)return readByte(a-0x2000);
+  if(a<0xFEA0)return oam[a-0xFE00];
+  if(a<0xFF00)return 0xFF;
+  if(a<0xFF80)return readIO(a);
+  if(a<0xFFFF)return hram[a-0xFF80];
+  return ieReg;
+}
+function writeByte(a,v){
+  a&=0xFFFF;v&=0xFF;
+  if(a<0x8000){mbcWrite(a,v);return;}
+  if(a<0xA000){vram[(isGBC?(vbk&1)*0x2000:0)+(a-0x8000)]=v;return;}
+  if(a<0xC000){if(!ramEn||!ramBanks)return;ramBanks[getRAMBank()*0x2000+(a-0xA000)]=v;return;}
+  if(a<0xD000){wram[a-0xC000]=v;return;}
+  if(a<0xE000){wram[((isGBC?((svbk&7)||1):1)*0x1000)+(a-0xD000)]=v;return;}
+  if(a<0xFE00){writeByte(a-0x2000,v);return;}
+  if(a<0xFEA0){oam[a-0xFE00]=v;return;}
+  if(a<0xFF00)return;
+  if(a<0xFF80){writeIO(a,v);return;}
+  if(a<0xFFFF){hram[a-0xFF80]=v;return;}
+  ieReg=v;
+}
+function mbcWrite(a,v){
+  if(cartType===0)return;
+  if(cartType<=3){
+    if(a<0x2000)ramEn=(v&0xF)===0xA;
+    else if(a<0x4000){romBankN=v&0x1F;if(!romBankN)romBankN=1;}
+    else if(a<0x6000)ramBankN=v&3;
+    else mbcMode=v&1;
+  }else if(cartType<=0x13){
+    if(a<0x2000)ramEn=(v&0xF)===0xA;
+    else if(a<0x4000){romBankN=v&0x7F;if(!romBankN)romBankN=1;}
+    else if(a<0x6000)ramBankN=v&0xF;
+  }else if(cartType<=0x1E){
+    if(a<0x2000)ramEn=(v&0xF)===0xA;
+    else if(a<0x3000)romBankN=(romBankN&0x100)|v;
+    else if(a<0x4000)romBankN=(romBankN&0xFF)|((v&1)<<8);
+    else if(a<0x6000)ramBankN=v&0xF;
+  }
+}
+function readIO(a){
+  let r=a&0xFF;
+  switch(r){
+    case 0x00:return readJoypad();
+    case 0x04:return divCounter>>8;
+    case 0x0F:return io[0x0F]|0xE0;
+    case 0x41:return(io[0x41]&0x7F)|0x80;
+    case 0x4D:return isGBC?((doubleSpeed?0x80:0)|0x7E):0xFF;
+    case 0x4F:return isGBC?(vbk|0xFE):0xFF;
+    case 0x55:return isGBC?(hdma5Read()):0xFF;
+    case 0x68:return isGBC?io[0x68]:0xFF;
+    case 0x69:return isGBC?bgPal[io[0x68]&0x3F]:0xFF;
+    case 0x6A:return isGBC?io[0x6A]:0xFF;
+    case 0x6B:return isGBC?objPal[io[0x6A]&0x3F]:0xFF;
+    case 0x70:return isGBC?(svbk|0xF8):0xFF;
+    default:return io[r]||0;
+  }
+}
+function hdma5Read(){return hdmaActive?((hdmaLen/0x10-1)&0x7F):0xFF;}
+function writeIO(a,v){
+  let r=a&0xFF;
+  switch(r){
+    case 0x00:io[0]=v&0x30;break;
+    case 0x04:divCounter=0;break;
+    case 0x05:io[5]=v;break;
+    case 0x06:io[6]=v;break;
+    case 0x07:io[7]=v&7;break;
+    case 0x0F:io[0x0F]=v&0x1F;break;
+    case 0x40:{
+      let wasOff=!(io[0x40]&0x80);io[0x40]=v;
+      if(wasOff&&(v&0x80)){ppuCycles=0;ppuMode=2;io[0x44]=0;io[0x41]=(io[0x41]&0xFC)|2;}
+      if(!(v&0x80)){io[0x44]=0;io[0x41]&=0xFC;}
+      break;}
+    case 0x41:io[0x41]=(v&0x78)|(io[0x41]&7);break;
+    case 0x42:io[0x42]=v;break;
+    case 0x43:io[0x43]=v;break;
+    case 0x45:io[0x45]=v;break;
+    case 0x46:io[0x46]=v;triggerDMA(v);break;
+    case 0x47:io[0x47]=v;break;
+    case 0x48:io[0x48]=v;break;
+    case 0x49:io[0x49]=v;break;
+    case 0x4A:io[0x4A]=v;break;
+    case 0x4B:io[0x4B]=v;break;
+    case 0x4D:if(isGBC)io[0x4D]=v&1;break;
+    case 0x4F:if(isGBC)vbk=v&1;break;
+    case 0x51:if(isGBC)io[0x51]=v;break;
+    case 0x52:if(isGBC)io[0x52]=v;break;
+    case 0x53:if(isGBC)io[0x53]=v;break;
+    case 0x54:if(isGBC)io[0x54]=v;break;
+    case 0x55:if(isGBC)startHDMA(v);break;
+    case 0x68:if(isGBC)io[0x68]=v;break;
+    case 0x69:if(isGBC){let i=io[0x68]&0x3F;bgPal[i]=v;if(io[0x68]&0x80)io[0x68]=(io[0x68]&0xC0)|((i+1)&0x3F);}break;
+    case 0x6A:if(isGBC)io[0x6A]=v;break;
+    case 0x6B:if(isGBC){let i=io[0x6A]&0x3F;objPal[i]=v;if(io[0x6A]&0x80)io[0x6A]=(io[0x6A]&0xC0)|((i+1)&0x3F);}break;
+    case 0x70:if(isGBC)svbk=v&7;break;
+    default:io[r]=v;break;
+  }
+}
+function triggerDMA(v){
+  let s=v<<8;
+  for(let i=0;i<0xA0;i++)oam[i]=readByte(s+i);
+}
+function startHDMA(v){
+  let src=((io[0x51]<<8)|(io[0x52]&0xF0))&0xFFF0;
+  let dst=(((io[0x53]&0x1F)<<8)|(io[0x54]&0xF0)|0x8000)&0xFFFF;
+  let len=((v&0x7F)+1)*0x10;
+  if(v&0x80){hdmaActive=true;hdmaSrc=src;hdmaDst=dst;hdmaLen=len;}
+  else{hdmaActive=false;for(let i=0;i<len;i++)writeByte(dst+i,readByte(src+i));}
+}
+function doHDMA(){
+  if(!hdmaActive)return;
+  for(let i=0;i<0x10;i++)writeByte(hdmaDst+i,readByte(hdmaSrc+i));
+  hdmaSrc=(hdmaSrc+0x10)&0xFFFF;hdmaDst=(hdmaDst+0x10)&0xFFFF;hdmaLen-=0x10;
+  if(hdmaLen<=0)hdmaActive=false;
+}
+
+/* ===== JOYPAD ===== */
+function readJoypad(){
+  let sel=io[0]&0x30,res=0xF;
+  if(!(sel&0x10))res&=(~joypad)&0xF;
+  if(!(sel&0x20))res&=((~joypad)>>4)&0xF;
+  return sel|res|0xC0;
+}
+function pressBtn(b){let w=joypad&(1<<b);joypad|=1<<b;if(!w)io[0x0F]|=0x10;}
+function releaseBtn(b){joypad&=~(1<<b);}
+
+/* ===== CPU HELPERS ===== */
+function gBC(){return(regB<<8)|regC}function sBC(v){regB=(v>>8)&0xFF;regC=v&0xFF;}
+function gDE(){return(regD<<8)|regE}function sDE(v){regD=(v>>8)&0xFF;regE=v&0xFF;}
+function gHL(){return(regH<<8)|regL}function sHL(v){regH=(v>>8)&0xFF;regL=v&0xFF;}
+function gAF(){return(regA<<8)|regF}function sAF(v){regA=(v>>8)&0xFF;regF=v&0xF0;}
+function pushW(v){SP=(SP-1)&0xFFFF;writeByte(SP,v>>8);SP=(SP-1)&0xFFFF;writeByte(SP,v&0xFF);}
+function popW(){let lo=readByte(SP);SP=(SP+1)&0xFFFF;let hi=readByte(SP);SP=(SP+1)&0xFFFF;return(hi<<8)|lo;}
+function fetchB(){let v=readByte(PC);PC=(PC+1)&0xFFFF;return v;}
+function fetchBS(){let v=fetchB();return v>127?v-256:v;}
+function fetchW(){let lo=fetchB();let hi=fetchB();return(hi<<8)|lo;}
+function readR(i){switch(i){case 0:return regB;case 1:return regC;case 2:return regD;case 3:return regE;case 4:return regH;case 5:return regL;case 6:return readByte(gHL());case 7:return regA;}}
+function writeR(i,v){v&=0xFF;switch(i){case 0:regB=v;break;case 1:regC=v;break;case 2:regD=v;break;case 3:regE=v;break;case 4:regH=v;break;case 5:regL=v;break;case 6:writeByte(gHL(),v);break;case 7:regA=v;break;}}
+function incR(v){v=(v+1)&0xFF;regF=(regF&FLAG_C)|(v?0:FLAG_Z)|(((v-1)&0xF)===0xF?FLAG_H:0);return v;}
+function decR(v){v=(v-1)&0xFF;regF=(regF&FLAG_C)|FLAG_N|(v?0:FLAG_Z)|((v&0xF)===0xF?FLAG_H:0);return v;}
+
+/* ===== ALU ===== */
+function aluADD(v){let r=regA+v;regF=0;if((r&0xFF)===0)regF|=FLAG_Z;if(((regA&0xF)+(v&0xF))>0xF)regF|=FLAG_H;if(r>0xFF)regF|=FLAG_C;regA=r&0xFF;}
+function aluADC(v){let c=(regF&FLAG_C)?1:0;let r=regA+v+c;regF=0;if((r&0xFF)===0)regF|=FLAG_Z;if(((regA&0xF)+(v&0xF)+c)>0xF)regF|=FLAG_H;if(r>0xFF)regF|=FLAG_C;regA=r&0xFF;}
+function aluSUB(v){let r=regA-v;regF=FLAG_N;if((r&0xFF)===0)regF|=FLAG_Z;if((regA&0xF)<(v&0xF))regF|=FLAG_H;if(regA<v)regF|=FLAG_C;regA=r&0xFF;}
+function aluSBC(v){let c=(regF&FLAG_C)?1:0;let r=regA-v-c;regF=FLAG_N;if((r&0xFF)===0)regF|=FLAG_Z;if((regA&0xF)<(v&0xF)+c)regF|=FLAG_H;if(r<0)regF|=FLAG_C;regA=r&0xFF;}
+function aluAND(v){regA&=v;regF=(regA?0:FLAG_Z)|FLAG_H;}
+function aluXOR(v){regA^=v;regF=regA?0:FLAG_Z;}
+function aluOR(v){regA|=v;regF=regA?0:FLAG_Z;}
+function aluCP(v){let r=regA-v;regF=FLAG_N;if((r&0xFF)===0)regF|=FLAG_Z;if((regA&0xF)<(v&0xF))regF|=FLAG_H;if(regA<v)regF|=FLAG_C;}
+function execALU(op,v){switch(op){case 0:aluADD(v);break;case 1:aluADC(v);break;case 2:aluSUB(v);break;case 3:aluSBC(v);break;case 4:aluAND(v);break;case 5:aluXOR(v);break;case 6:aluOR(v);break;case 7:aluCP(v);break;}}
+function addHL(v){let hl=gHL();let r=hl+v;regF=(regF&FLAG_Z)|(((hl&0xFFF)+(v&0xFFF))>0xFFF?FLAG_H:0)|(r>0xFFFF?FLAG_C:0);sHL(r&0xFFFF);}
+function addSPS(v){let s=v>127?v-256:v;let r=(SP+s)&0xFFFF;let chk=(SP&0xFF)+v;regF=0;if(((SP&0xF)+(v&0xF))>0xF)regF|=FLAG_H;if(chk>0xFF)regF|=FLAG_C;return r;}
+function daa(){
+  let a=regA;
+  if(!(regF&FLAG_N)){if((regF&FLAG_C)||a>0x99){a+=0x60;regF|=FLAG_C;}if((regF&FLAG_H)||(a&0xF)>9)a+=0x6;}
+  else{if(regF&FLAG_C)a-=0x60;if(regF&FLAG_H)a-=0x6;}
+  regA=a&0xFF;regF&=~FLAG_H;if(!regA)regF|=FLAG_Z;else regF&=~FLAG_Z;
+}
+
+/* ===== MAIN OPCODE EXECUTION ===== */
+function execOp(op){
+  if(op>=0x40&&op<=0x7F&&op!==0x76){
+    let d=(op>>3)&7,s=op&7;writeR(d,readR(s));return(s===6||d===6)?8:4;
+  }
+  if(op>=0x80&&op<=0xBF){
+    let a=(op>>3)&7,s=op&7;execALU(a,readR(s));return s===6?8:4;
+  }
+  switch(op){
+    case 0x00:return 4;
+    case 0x01:sBC(fetchW());return 12;
+    case 0x02:writeByte(gBC(),regA);return 8;
+    case 0x03:sBC((gBC()+1)&0xFFFF);return 8;
+    case 0x04:regB=incR(regB);return 4;
+    case 0x05:regB=decR(regB);return 4;
+    case 0x06:regB=fetchB();return 8;
+    case 0x07:{let c=(regA>>7)&1;regA=((regA<<1)|c)&0xFF;regF=c?FLAG_C:0;return 4;}
+    case 0x08:{let a=fetchW();writeByte(a,SP&0xFF);writeByte(a+1,SP>>8);return 20;}
+    case 0x09:addHL(gBC());return 8;
+    case 0x0A:regA=readByte(gBC());return 8;
+    case 0x0B:sBC((gBC()-1)&0xFFFF);return 8;
+    case 0x0C:regC=incR(regC);return 4;
+    case 0x0D:regC=decR(regC);return 4;
+    case 0x0E:regC=fetchB();return 8;
+    case 0x0F:{let c=regA&1;regA=((regA>>1)|(c<<7))&0xFF;regF=c?FLAG_C:0;return 4;}
+    case 0x10:fetchB();
+      if(isGBC&&(io[0x4D]&1)){doubleSpeed=!doubleSpeed;io[0x4D]=doubleSpeed?0x80:0;}
+      return 4;
+    case 0x11:sDE(fetchW());return 12;
+    case 0x12:writeByte(gDE(),regA);return 8;
+    case 0x13:sDE((gDE()+1)&0xFFFF);return 8;
+    case 0x14:regD=incR(regD);return 4;
+    case 0x15:regD=decR(regD);return 4;
+    case 0x16:regD=fetchB();return 8;
+    case 0x17:{let c=(regF&FLAG_C)?1:0;let nc=(regA>>7)&1;regA=((regA<<1)|c)&0xFF;regF=nc?FLAG_C:0;return 4;}
+    case 0x18:{let r=fetchBS();PC=(PC+r)&0xFFFF;return 12;}
+    case 0x19:addHL(gDE());return 8;
+    case 0x1A:regA=readByte(gDE());return 8;
+    case 0x1B:sDE((gDE()-1)&0xFFFF);return 8;
+    case 0x1C:regE=incR(regE);return 4;
+    case 0x1D:regE=decR(regE);return 4;
+    case 0x1E:regE=fetchB();return 8;
+    case 0x1F:{let c=(regF&FLAG_C)?1:0;let nc=regA&1;regA=((regA>>1)|(c<<7))&0xFF;regF=nc?FLAG_C:0;return 4;}
+    case 0x20:{let r=fetchBS();if(!(regF&FLAG_Z)){PC=(PC+r)&0xFFFF;return 12;}return 8;}
+    case 0x21:sHL(fetchW());return 12;
+    case 0x22:writeByte(gHL(),regA);sHL((gHL()+1)&0xFFFF);return 8;
+    case 0x23:sHL((gHL()+1)&0xFFFF);return 8;
+    case 0x24:regH=incR(regH);return 4;
+    case 0x25:regH=decR(regH);return 4;
+    case 0x26:regH=fetchB();return 8;
+    case 0x27:daa();return 4;
+    case 0x28:{let r=fetchBS();if(regF&FLAG_Z){PC=(PC+r)&0xFFFF;return 12;}return 8;}
+    case 0x29:addHL(gHL());return 8;
+    case 0x2A:regA=readByte(gHL());sHL((gHL()+1)&0xFFFF);return 8;
+    case 0x2B:sHL((gHL()-1)&0xFFFF);return 8;
+    case 0x2C:regL=incR(regL);return 4;
+    case 0x2D:regL=decR(regL);return 4;
+    case 0x2E:regL=fetchB();return 8;
+    case 0x2F:regA=(~regA)&0xFF;regF=(regF&FLAG_Z)|FLAG_N|FLAG_H;return 4;
+    case 0x30:{let r=fetchBS();if(!(regF&FLAG_C)){PC=(PC+r)&0xFFFF;return 12;}return 8;}
+    case 0x31:SP=fetchW();return 12;
+    case 0x32:writeByte(gHL(),regA);sHL((gHL()-1)&0xFFFF);return 8;
+    case 0x33:SP=(SP+1)&0xFFFF;return 8;
+    case 0x34:{let v=readByte(gHL());writeByte(gHL(),incR(v));return 12;}
+    case 0x35:{let v=readByte(gHL());writeByte(gHL(),decR(v));return 12;}
+    case 0x36:writeByte(gHL(),fetchB());return 12;
+    case 0x37:regF=(regF&FLAG_Z)|FLAG_C;return 4;
+    case 0x38:{let r=fetchBS();if(regF&FLAG_C){PC=(PC+r)&0xFFFF;return 12;}return 8;}
+    case 0x39:addHL(SP);return 8;
+    case 0x3A:regA=readByte(gHL());sHL((gHL()-1)&0xFFFF);return 8;
+    case 0x3B:SP=(SP-1)&0xFFFF;return 8;
+    case 0x3C:regA=incR(regA);return 4;
+    case 0x3D:regA=decR(regA);return 4;
+    case 0x3E:regA=fetchB();return 8;
+    case 0x3F:regF=(regF&FLAG_Z)|((regF&FLAG_C)?0:FLAG_C);return 4;
+    case 0x76:halted=true;return 4;
+    case 0xC0:if(!(regF&FLAG_Z)){PC=popW();return 20;}return 8;
+    case 0xC1:sBC(popW());return 12;
+    case 0xC2:{let a=fetchW();if(!(regF&FLAG_Z)){PC=a;return 16;}return 12;}
+    case 0xC3:PC=fetchW();return 16;
+    case 0xC4:{let a=fetchW();if(!(regF&FLAG_Z)){pushW(PC);PC=a;return 24;}return 12;}
+    case 0xC5:pushW(gBC());return 16;
+    case 0xC6:execALU(0,fetchB());return 8;
+    case 0xC7:pushW(PC);PC=0x00;return 16;
+    case 0xC8:if(regF&FLAG_Z){PC=popW();return 20;}return 8;
+    case 0xC9:PC=popW();return 16;
+    case 0xCA:{let a=fetchW();if(regF&FLAG_Z){PC=a;return 16;}return 12;}
+    case 0xCB:return 4+execCB(fetchB());
+    case 0xCC:{let a=fetchW();if(regF&FLAG_Z){pushW(PC);PC=a;return 24;}return 12;}
+    case 0xCD:{let a=fetchW();pushW(PC);PC=a;return 24;}
+    case 0xCE:execALU(1,fetchB());return 8;
+    case 0xCF:pushW(PC);PC=0x08;return 16;
+    case 0xD0:if(!(regF&FLAG_C)){PC=popW();return 20;}return 8;
+    case 0xD1:sDE(popW());return 12;
+    case 0xD2:{let a=fetchW();if(!(regF&FLAG_C)){PC=a;return 16;}return 12;}
+    case 0xD4:{let a=fetchW();if(!(regF&FLAG_C)){pushW(PC);PC=a;return 24;}return 12;}
+    case 0xD5:pushW(gDE());return 16;
+    case 0xD6:execALU(2,fetchB());return 8;
+    case 0xD7:pushW(PC);PC=0x10;return 16;
+    case 0xD8:if(regF&FLAG_C){PC=popW();return 20;}return 8;
+    case 0xD9:PC=popW();IME=true;return 16;
+    case 0xDA:{let a=fetchW();if(regF&FLAG_C){PC=a;return 16;}return 12;}
+    case 0xDC:{let a=fetchW();if(regF&FLAG_C){pushW(PC);PC=a;return 24;}return 12;}
+    case 0xDE:execALU(3,fetchB());return 8;
+    case 0xDF:pushW(PC);PC=0x18;return 16;
+    case 0xE0:writeByte(0xFF00+fetchB(),regA);return 12;
+    case 0xE1:sHL(popW());return 12;
+    case 0xE2:writeByte(0xFF00+regC,regA);return 8;
+    case 0xE5:pushW(gHL());return 16;
+    case 0xE6:execALU(4,fetchB());return 8;
+    case 0xE7:pushW(PC);PC=0x20;return 16;
+    case 0xE8:{SP=addSPS(fetchB());return 16;}
+    case 0xE9:PC=gHL();return 4;
+    case 0xEA:writeByte(fetchW(),regA);return 16;
+    case 0xEE:execALU(5,fetchB());return 8;
+    case 0xEF:pushW(PC);PC=0x28;return 16;
+    case 0xF0:regA=readByte(0xFF00+fetchB());return 12;
+    case 0xF1:sAF(popW());return 12;
+    case 0xF2:regA=readByte(0xFF00+regC);return 8;
+    case 0xF3:IME=false;return 4;
+    case 0xF5:pushW(gAF());return 16;
+    case 0xF6:execALU(6,fetchB());return 8;
+    case 0xF7:pushW(PC);PC=0x30;return 16;
+    case 0xF8:{sHL(addSPS(fetchB()));return 16;}
+    case 0xF9:SP=gHL();return 8;
+    case 0xFA:regA=readByte(fetchW());return 16;
+    case 0xFB:EI_pending=true;return 4;
+    case 0xFE:execALU(7,fetchB());return 8;
+    case 0xFF:pushW(PC);PC=0x38;return 16;
+    default:return 4;
+  }
+}
+
+/* ===== CB PREFIX ===== */
+function execCB(op){
+  let r=op&7,v=readR(r),hl=(r===6),res;
+  if(op<0x08){let c=(v>>7)&1;res=((v<<1)|c)&0xFF;regF=(res?0:FLAG_Z)|(c?FLAG_C:0);writeR(r,res);return hl?16:8;}
+  if(op<0x10){let c=v&1;res=((v>>1)|(c<<7))&0xFF;regF=(res?0:FLAG_Z)|(c?FLAG_C:0);writeR(r,res);return hl?16:8;}
+  if(op<0x18){let oc=(regF&FLAG_C)?1:0;let nc=(v>>7)&1;res=((v<<1)|oc)&0xFF;regF=(res?0:FLAG_Z)|(nc?FLAG_C:0);writeR(r,res);return hl?16:8;}
+  if(op<0x20){let oc=(regF&FLAG_C)?1:0;let nc=v&1;res=((v>>1)|(oc<<7))&0xFF;regF=(res?0:FLAG_Z)|(nc?FLAG_C:0);writeR(r,res);return hl?16:8;}
+  if(op<0x28){let c=(v>>7)&1;res=(v<<1)&0xFF;regF=(res?0:FLAG_Z)|(c?FLAG_C:0);writeR(r,res);return hl?16:8;}
+  if(op<0x30){let c=v&1;res=((v>>1)|(v&0x80))&0xFF;regF=(res?0:FLAG_Z)|(c?FLAG_C:0);writeR(r,res);return hl?16:8;}
+  if(op<0x38){res=((v&0xF)<<4)|((v&0xF0)>>4);regF=res?0:FLAG_Z;writeR(r,res);return hl?16:8;}
+  if(op<0x40){let c=v&1;res=(v>>1)&0xFF;regF=(res?0:FLAG_Z)|(c?FLAG_C:0);writeR(r,res);return hl?16:8;}
+  if(op<0x80){let b=(op>>3)&7;regF=(regF&FLAG_C)|FLAG_H|((v&(1<<b))?0:FLAG_Z);return hl?12:8;}
+  if(op<0xC0){let b=(op>>3)&7;writeR(r,v&~(1<<b));return hl?16:8;}
+  let b=(op>>3)&7;writeR(r,v|(1<<b));return hl?16:8;
+}
+
+/* ===== PPU ===== */
+function updatePPU(cycles){
+  if(!(io[0x40]&0x80))return;
+  ppuCycles+=cycles;
+  while(ppuCycles>=456){
+    ppuCycles-=456;
+    let ly=io[0x44];
+    if(ly<144){
+      renderLine(ly);
+      if(isGBC&&hdmaActive)doHDMA();
+    }
+    ly++;io[0x44]=ly;
+    if(ly===144){
+      ppuMode=1;io[0x41]=(io[0x41]&0xFC)|1;
+      io[0x0F]|=1;if(io[0x41]&0x10)io[0x0F]|=2;
+      frameReady=true;
+    }else if(ly>=154){
+      ly=0;io[0x44]=0;ppuMode=2;winLineCnt=0;
+      io[0x41]=(io[0x41]&0xFC)|2;
+      if(io[0x41]&0x20)io[0x0F]|=2;
+    }
+    if(io[0x44]===io[0x45]){io[0x41]|=4;if(io[0x41]&0x40)io[0x0F]|=2;}
+    else io[0x41]&=~4;
+  }
+}
+function gbcRGB(c){let r=c&0x1F,g=(c>>5)&0x1F,b=(c>>10)&0x1F;return[(r<<3)|(r>>2),(g<<3)|(g>>2),(b<<3)|(b>>2)];}
+function renderLine(line){
+  let lcdc=io[0x40];
+  if(!(lcdc&0x80))return;
+  let scy=io[0x42],scx=io[0x43],wy=io[0x4A],wx=io[0x4B]-7;
+  let bgIdx=new Uint8Array(160);
+  let palC=[];
+  if(!isGBC){let p=io[0x47];for(let i=0;i<4;i++)palC[i]=DMG_PAL[(p>>(i*2))&3];}
+  /* BG */
+  if(lcdc&1){
+    let tmap=(lcdc&8)?0x1C00:0x1800,sign=!(lcdc&0x10);
+    let yp=(scy+line)&0xFF,tr=(yp>>3)&31;
+    for(let px=0;px<160;px++){
+      let xp=(scx+px)&0xFF,tc=(xp>>3)&31,ma=tmap+tr*32+tc;
+      let vb=0,pi=0,fx=false,fy=false;
+      if(isGBC){let at=vram[0x2000+ma];vb=(at&8)?1:0;pi=(at&7)*8;fx=!!(at&0x20);fy=!!(at&0x40);}
+      let tn=vram[vb*0x2000+ma],ta;
+      if(sign){let sn=tn>127?tn-256:tn;ta=0x1000+sn*16;}else ta=tn*16;
+      let li=yp&7;if(fy)li=7-li;
+      let b1=vram[vb*0x2000+ta+li*2],b2=vram[vb*0x2000+ta+li*2+1];
+      let bit=fx?(xp&7):(7-(xp&7));
+      let cn=((b2>>bit)&1)<<1|((b1>>bit)&1);
+      bgIdx[px]=cn;
+      let col;
+      if(isGBC){let c=bgPal[pi+cn*2]|(bgPal[pi+cn*2+1]<<8);col=gbcRGB(c);}
+      else col=palC[cn];
+      let o=(line*160+px)*4;screenBuf[o]=col[0];screenBuf[o+1]=col[1];screenBuf[o+2]=col[2];screenBuf[o+3]=255;
+    }
+  }
+  /* Window */
+  if((lcdc&0x20)&&(lcdc&1)&&wy<=line&&wx<160){
+    let tmap=(lcdc&0x40)?0x1C00:0x1800,sign=!(lcdc&0x10);
+    let yp=winLineCnt,tr=(yp>>3)&31,started=false;
+    for(let px=Math.max(0,wx);px<160;px++){
+      if(!px&&wx>0)continue;
+      started=true;
+      let winX=px-wx,tc=(winX>>3)&31,ma=tmap+tr*32+tc;
+      let vb=0,pi=0,fx=false,fy=false;
+      if(isGBC){let at=vram[0x2000+ma];vb=(at&8)?1:0;pi=(at&7)*8;fx=!!(at&0x20);fy=!!(at&0x40);}
+      let tn=vram[vb*0x2000+ma],ta;
+      if(sign){let sn=tn>127?tn-256:tn;ta=0x1000+sn*16;}else ta=tn*16;
+      let li=yp&7;if(fy)li=7-li;
+      let b1=vram[vb*0x2000+ta+li*2],b2=vram[vb*0x2000+ta+li*2+1];
+      let bit=fx?(winX&7):(7-(winX&7));
+      let cn=((b2>>bit)&1)<<1|((b1>>bit)&1);
+      bgIdx[px]=cn;
+      let col;
+      if(isGBC){let c=bgPal[pi+cn*2]|(bgPal[pi+cn*2+1]<<8);col=gbcRGB(c);}
+      else col=palC[cn];
+      let o=(line*160+px)*4;screenBuf[o]=col[0];screenBuf[o+1]=col[1];screenBuf[o+2]=col[2];screenBuf[o+3]=255;
+    }
+    winLineCnt++;
+  }
+  /* Sprites */
+  if(lcdc&2){
+    let sh=(lcdc&4)?16:8,sp=[];
+    for(let i=0;i<40;i++){
+      let sy=oam[i*4]-16,sx=oam[i*4+1]-8,st=oam[i*4+2],sf=oam[i*4+3];
+      if(line>=sy&&line<sy+sh){sp.push({y:sy,x:sx,tile:st,flags:sf,idx:i});if(sp.length>=10)break;}
+    }
+    if(!isGBC)sp.sort((a,b)=>a.x!==b.x?a.x-b.x:a.idx-b.idx);
+    for(let i=sp.length-1;i>=0;i--){
+      let s=sp[i],fx=!!(s.flags&0x20),fy=!!(s.flags&0x40),behind=!!(s.flags&0x80);
+      let vb=isGBC&&((s.flags&8)?1:0),pn=isGBC?(s.flags&7)*8:0,dmgP=s.flags&0x10;
+      let tn=s.tile;if(sh===16)tn&=0xFE;
+      let li=line-s.y;if(fy)li=sh-1-li;
+      let b1=vram[vb*0x2000+tn*16+li*2],b2=vram[vb*0x2000+tn*16+li*2+1];
+      for(let px=0;px<8;px++){
+        let sx2=s.x+px;if(sx2<0||sx2>=160)continue;
+        let bit=fx?px:(7-px);
+        let cn=((b2>>bit)&1)<<1|((b1>>bit)&1);
+        if(!cn)continue;
+        if(behind&&bgIdx[sx2]!==0)continue;
+        let col;
+        if(isGBC){let c=objPal[pn+cn*2]|(objPal[pn+cn*2+1]<<8);col=gbcRGB(c);}
+        else{let p=dmgP?io[0x49]:io[0x48];col=DMG_PAL[(p>>(cn*2))&3];}
+        let o=(line*160+sx2)*4;screenBuf[o]=col[0];screenBuf[o+1]=col[1];screenBuf[o+2]=col[2];screenBuf[o+3]=255;
+      }
+    }
+  }
+}
+
+/* ===== TIMERS ===== */
+function updateTimers(c){
+  divCounter+=c;
+  if(io[7]&4){
+    timaCounter+=c;
+    let freq=[1024,16,64,256][io[7]&3];
+    while(timaCounter>=freq){
+      timaCounter-=freq;io[5]++;
+      if(io[5]>255){io[5]=io[6];io[0x0F]|=4;}
+    }
+  }
+}
+
+/* ===== STEP ===== */
+function step(){
+  let wasEI=EI_pending;
+  let pending=io[0x0F]&ieReg&0x1F;
+  if(pending&&halted)halted=false;
+  if(pending&&IME){
+    IME=false;EI_pending=false;
+    for(let i=0;i<5;i++){
+      if(pending&(1<<i)){io[0x0F]&=~(1<<i);pushW(PC);PC=0x40+i*8;return 20;}
+    }
+  }
+  if(halted)return 4;
+  let op=fetchB();
+  let cyc=execOp(op);
+  if(wasEI){IME=true;EI_pending=false;}
+  return cyc;
+}
+function runFrame(){
+  let fc=0;
+  while(fc<CYCLES_PER_FRAME){
+    let c=step();
+    let pc=isGBC&&doubleSpeed?(c>>1):c;
+    fc+=pc;updatePPU(pc);updateTimers(pc);
+  }
+}
+
+/* ===== ROM LOADING ===== */
+function loadROM(buf){
+  romData=new Uint8Array(buf);
+  if(romData.length<0x150){showToast("ROM inválida!");return;}
+  cartType=romData[0x147];
+  let rs=romData[0x148],ramCode=romData[0x149];
+  romBanks=2<<rs;
+  let ramSizes=[0,0,1,4,16,8];
+  let ramKB=ramSizes[ramCode]||0;
+  ramBanks=ramKB>0?new Uint8Array(ramKB*1024):null;
+  isGBC=romData[0x143]===0x80||romData[0x143]===0xC0;
+  let title='';for(let i=0x134;i<=0x143;i++){let c=romData[i];if(c===0)break;if(c>=32&&c<127)title+=String.fromCharCode(c);}
+  title=title.trim()||'UNKNOWN';
+  resetCPU();
+  loadSave(title);
+  document.getElementById('romName').textContent=title+(isGBC?' [GBC]':' [DMG]');
+  document.getElementById('romName').classList.add('active');
+  document.getElementById('powerLed').classList.add('on');
+  document.getElementById('btnReset').disabled=false;
+  document.getElementById('btnPause').disabled=false;
+  running=true;paused=false;
+  document.getElementById('btnPause').textContent='❚❚ Pausar';
+  showToast('ROM carregada: '+title);
+}
+
+function resetCPU(){
+  regA=isGBC?0x11:0x01;regF=0xB0;
+  regB=0;regC=isGBC?0:0x13;
+  regD=isGBC?0xFF:0;regE=isGBC?0x56:0xD8;
+  regH=0;regL=isGBC?0x0D:0x4D;
+  SP=0xFFFE;PC=0x0100;
+  IME=false;EI_pending=false;halted=false;doubleSpeed=false;
+  romBankN=1;ramBankN=0;ramEn=false;mbcMode=0;
+  vbk=0;svbk=1;hdmaActive=false;
+  vram.fill(0);wram.fill(0);oam.fill(0);io.fill(0);hram.fill(0);ieReg=0;
+  bgPal.fill(0);objPal.fill(0);
+  io[0x40]=0x91;io[0x47]=0xFC;io[0x48]=0xFF;io[0x49]=0xFF;
+  ppuCycles=0;ppuMode=2;winLineCnt=0;divCounter=0;timaCounter=0;
+  frameReady=false;
+  screenBuf=new Uint8Array(160*144*4);
+  for(let i=0;i<screenBuf.length;i+=4){screenBuf[i]=224;screenBuf[i+1]=248;screenBuf[i+2]=208;screenBuf[i+3]=255;}
+}
+
+/* ===== SAVE/LOAD ===== */
+function saveRAM(title){
+  if(!ramBanks||!ramEn)return;
+  try{localStorage.setItem('gbc_save_'+title,JSON.stringify(Array.from(ramBanks)));}catch(e){}
+}
+function loadSave(title){
+  try{
+    let d=localStorage.getItem('gbc_save_'+title);
+    if(d&&ramBanks){let a=JSON.parse(d);for(let i=0;i<Math.min(a.length,ramBanks.length);i++)ramBanks[i]=a[i];}
+  }catch(e){}
+}
+
+/* ===== UI ===== */
+let canvas2,ctx2,imgData2;
+function initUI(){
+  canvas=document.getElementById('screen');
+  ctx=canvas.getContext('2d',{willReadFrequently:false});
+  imgData=ctx.createImageData(160,144);
+  screenBuf=new Uint8Array(160*144*4);
+  for(let i=0;i<screenBuf.length;i+=4){screenBuf[i]=224;screenBuf[i+1]=248;screenBuf[i+2]=208;screenBuf[i+3]=255;}
+  imgData.data.set(screenBuf);ctx.putImageData(imgData,0,0);
+
+  document.getElementById('romInput').addEventListener('change',e=>{
+    let f=e.target.files[0];if(!f)return;
+    let r=new FileReader();
+    r.onload=()=>{let title=getROMTitle();if(title)saveRAM(title);loadROM(r.result);};
+    r.readAsArrayBuffer(f);e.target.value='';
+  });
+  document.getElementById('btnReset').addEventListener('click',()=>{
+    if(!romData)return;let title=getROMTitle();if(title)saveRAM(title);resetCPU();loadSave(title);showToast('Reset!');
+  });
+  document.getElementById('btnPause').addEventListener('click',()=>{
+    if(!running)return;paused=!paused;
+    document.getElementById('btnPause').textContent=paused?'▶ Retomar':'❚❚ Pausar';
+    showToast(paused?'Pausado':'Retomado');
+  });
+  document.getElementById('btnFullscreen').addEventListener('click',()=>{
+    let el=document.querySelector('.screen-frame');
+    if(el.requestFullscreen)el.requestFullscreen();
+    else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
+  });
+
+  /* Keyboard */
+  const keyMap={'ArrowRight':0,'ArrowLeft':1,'ArrowUp':2,'ArrowDown':3,'KeyZ':4,'KeyX':5,'ShiftRight':6,'ShiftLeft':6,'Enter':7};
+  document.addEventListener('keydown',e=>{
+    let b=keyMap[e.code];if(b!==undefined){e.preventDefault();pressBtn(b);}
+    if(e.code==='KeyP'&&running){paused=!paused;document.getElementById('btnPause').textContent=paused?'▶ Retomar':'❚❚ Pausar';}
+  });
+  document.addEventListener('keyup',e=>{let b=keyMap[e.code];if(b!==undefined)releaseBtn(b);});
+
+  /* Touch gamepad */
+  document.querySelectorAll('[data-btn]').forEach(el=>{
+    let b=parseInt(el.dataset.btn);
+    el.addEventListener('touchstart',e=>{e.preventDefault();pressBtn(b);el.classList.add('pressed');},{passive:false});
+    el.addEventListener('touchend',e=>{e.preventDefault();releaseBtn(b);el.classList.remove('pressed');},{passive:false});
+    el.addEventListener('touchcancel',e=>{releaseBtn(b);el.classList.remove('pressed');});
+    el.addEventListener('mousedown',e=>{e.preventDefault();pressBtn(b);el.classList.add('pressed');});
+    el.addEventListener('mouseup',e=>{releaseBtn(b);el.classList.remove('pressed');});
+    el.addEventListener('mouseleave',e=>{releaseBtn(b);el.classList.remove('pressed');});
+  });
+
+  /* Prevent scroll on mobile */
+  document.addEventListener('touchmove',e=>{if(running)e.preventDefault();},{passive:false});
+
+  requestAnimationFrame(mainLoop);
+}
+
+function getROMTitle(){
+  if(!romData)return'';
+  let t='';for(let i=0x134;i<=0x143;i++){let c=romData[i];if(c===0)break;if(c>=32&&c<127)t+=String.fromCharCode(c);}
+  return t.trim();
+}
+
+function showToast(msg){
+  let t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+let fpsEl,fpsTimer=0,frames=0;
+function mainLoop(ts){
+  requestAnimationFrame(mainLoop);
+  if(!running||paused)return;
+  fpsEl=document.getElementById('fpsDisplay');
+  try{runFrame();}catch(e){console.error(e);running=false;showToast('Erro: '+e.message);return;}
+  imgData.data.set(screenBuf);ctx.putImageData(imgData,0,0);
+  frames++;
+  if(ts-fpsTimer>1000){fpsEl.textContent=Math.round(frames*1000/(ts-fpsTimer))+' FPS';frames=0;fpsTimer=ts;}
+}
+
+/* Auto-save on exit */
+window.addEventListener('beforeunload',()=>{let t=getROMTitle();if(t&&ramBanks)saveRAM(t);});
+
+initUI();
+</script>
+</body>
+</html>
