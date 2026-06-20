@@ -1,0 +1,2959 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FFF8E7">
+<meta name="description" content="PBL — O super simulador de PlayStation 1 que roda direto no navegador. Neo-brutalista, responsivo e viciante.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>PBL · PLAY ULTIMATE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23FF6B35'/%3E%3Crect x='5' y='5' width='90' height='90' fill='none' stroke='black' stroke-width='6'/%3E%3Ctext x='50' y='68' font-family='Arial Black' font-size='32' font-weight='900' text-anchor='middle' fill='black'%3EPBL%3C/text%3E%3C/svg%3E">
+<style>
+/* ============== RESET & TOKENS ============== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#FFF8E7;
+  --fg:#1A1A1A;
+  --accent:#FF6B35;
+  --cyan:#00D9FF;
+  --yellow:#FFD60A;
+  --green:#06FFA5;
+  --magenta:#F72585;
+  --purple:#9D4EDD;
+  --border:3px solid #1A1A1A;
+  --shadow:8px 8px 0 #1A1A1A;
+  --shadow-sm:4px 4px 0 #1A1A1A;
+  --shadow-lg:12px 12px 0 #1A1A1A;
+  --shadow-none:0 0 0 #1A1A1A;
+  --radius:0;
+  --font-display:'Archivo Black',system-ui,sans-serif;
+  --font-body:'Space Grotesk',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;width:100%;overflow-x:hidden}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--fg);
+  line-height:1.5;
+  font-size:16px;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
+  touch-action:manipulation;
+}
+img,canvas{max-width:100%;display:block}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit}
+a{color:inherit;text-decoration:none}
+ul{list-style:none}
+
+/* ============== UTILITIES ============== */
+.brutalist{border:var(--border);box-shadow:var(--shadow);background:var(--bg)}
+.brutalist-cyan{background:var(--cyan)}
+.brutalist-orange{background:var(--accent);color:var(--fg)}
+.brutalist-yellow{background:var(--yellow)}
+.brutalist-green{background:var(--green)}
+.brutalist-magenta{background:var(--magenta);color:#fff}
+.brutalist-dark{background:var(--fg);color:var(--bg)}
+.shadow-hover{transition:transform .15s ease,box-shadow .15s ease}
+.shadow-hover:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow-lg)}
+.shadow-hover:active{transform:translate(4px,4px);box-shadow:var(--shadow-none)}
+
+/* ============== MARQUEE ============== */
+.marquee{
+  background:var(--fg);color:var(--bg);
+  border-bottom:var(--border);
+  padding:10px 0;overflow:hidden;white-space:nowrap;
+  font-family:var(--font-display);font-size:14px;letter-spacing:2px;
+  position:relative;
+}
+.marquee-track{display:inline-block;animation:marquee 22s linear infinite;will-change:transform}
+.marquee-track span{margin:0 24px}
+.marquee-track .star{color:var(--accent)}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ============== HEADER ============== */
+.header{
+  position:sticky;top:0;z-index:50;
+  background:var(--bg);
+  border-bottom:var(--border);
+  padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:22px;letter-spacing:-0.5px}
+.logo-badge{
+  width:40px;height:40px;background:var(--accent);
+  border:var(--border);box-shadow:var(--shadow-sm);
+  display:grid;place-items:center;font-size:12px;color:#fff;
+  position:relative;
+}
+.logo-badge::after{
+  content:'';position:absolute;top:4px;right:4px;width:6px;height:6px;
+  background:var(--green);border:1.5px solid #000;border-radius:50%;
+  animation:blink 1.4s infinite;
+}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.2}}
+.nav{display:flex;gap:8px;align-items:center}
+.nav-btn{
+  font-family:var(--font-display);font-size:13px;letter-spacing:1px;
+  padding:8px 14px;border:var(--border);background:var(--bg);
+  box-shadow:var(--shadow-sm);transition:all .12s;
+}
+.nav-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 #1A1A1A}
+.nav-btn:active{transform:translate(2px,2px);box-shadow:0 0 0 #1A1A1A}
+.nav-btn.accent{background:var(--accent);color:#fff}
+.nav-btn.cyan{background:var(--cyan)}
+.nav-btn.yellow{background:var(--yellow)}
+@media (max-width:640px){
+  .header{padding:10px 14px}
+  .logo{font-size:18px}
+  .logo-badge{width:34px;height:34px;font-size:10px}
+  .nav-btn{padding:6px 10px;font-size:11px}
+}
+
+/* ============== HERO ============== */
+.hero{
+  padding:60px 24px 40px;
+  display:grid;grid-template-columns:1.4fr 1fr;gap:32px;
+  max-width:1400px;margin:0 auto;
+  position:relative;
+}
+.hero::before{
+  content:'PRESS START';position:absolute;top:20px;right:24px;
+  font-family:var(--font-mono);font-size:11px;color:var(--accent);
+  letter-spacing:3px;animation:blink 1s infinite;
+}
+.hero-title{
+  font-family:var(--font-display);
+  font-size:clamp(48px,9vw,128px);
+  line-height:.88;letter-spacing:-3px;
+  margin-bottom:18px;
+}
+.hero-title .l1{display:block;color:var(--fg)}
+.hero-title .l2{display:block;color:var(--accent);text-shadow:6px 6px 0 var(--cyan)}
+.hero-title .l3{display:block;color:var(--fg);font-size:0.42em;letter-spacing:-1px;margin-top:8px}
+.hero-sub{
+  font-size:clamp(15px,1.8vw,19px);max-width:520px;
+  margin-bottom:28px;color:var(--fg);
+}
+.hero-sub b{background:var(--yellow);padding:2px 8px;border:2px solid #000;box-shadow:3px 3px 0 #000}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.btn{
+  font-family:var(--font-display);font-size:16px;letter-spacing:1px;
+  padding:18px 28px;border:var(--border);background:var(--bg);
+  box-shadow:var(--shadow);transition:all .15s;
+  display:inline-flex;align-items:center;gap:10px;
+  text-transform:uppercase;
+}
+.btn:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow-lg)}
+.btn:active{transform:translate(4px,4px);box-shadow:var(--shadow-none)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-cyan{background:var(--cyan)}
+.btn-yellow{background:var(--yellow)}
+.btn-dark{background:var(--fg);color:var(--bg)}
+.btn .arrow{font-family:var(--font-mono);font-weight:bold}
+.hero-card{
+  background:var(--cyan);border:var(--border);box-shadow:var(--shadow-lg);
+  padding:24px;position:relative;align-self:start;
+  transform:rotate(2deg);
+}
+.hero-card::before{
+  content:'NOVIDADE 2026';position:absolute;top:-14px;left:-14px;
+  background:var(--magenta);color:#fff;
+  border:var(--border);box-shadow:var(--shadow-sm);
+  padding:4px 10px;font-family:var(--font-display);font-size:11px;letter-spacing:1px;
+}
+.hero-card h3{font-family:var(--font-display);font-size:22px;margin-bottom:12px;line-height:1.1}
+.hero-card ul{display:grid;gap:10px;font-size:14px;font-weight:500}
+.hero-card li{padding-left:24px;position:relative}
+.hero-card li::before{content:'▸';position:absolute;left:0;color:var(--accent);font-weight:900}
+.hero-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+  margin-top:18px;border:var(--border);background:var(--bg);
+}
+.hero-stat{padding:10px 8px;text-align:center;border-right:2px solid #000}
+.hero-stat:last-child{border-right:none}
+.hero-stat .n{font-family:var(--font-display);font-size:18px;color:var(--accent)}
+.hero-stat .l{font-size:9px;letter-spacing:1px;text-transform:uppercase;opacity:.7}
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr;padding:40px 16px 28px;gap:24px}
+  .hero::before{display:none}
+  .hero-card{transform:none}
+}
+
+/* ============== CONSOLE SECTION ============== */
+.console-section{
+  padding:40px 24px;
+  max-width:1400px;margin:0 auto;
+}
+.section-header{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  margin-bottom:24px;flex-wrap:wrap;
+}
+.section-title{
+  font-family:var(--font-display);
+  font-size:clamp(28px,5vw,56px);letter-spacing:-1.5px;line-height:1;
+}
+.section-title .tag{
+  display:inline-block;background:var(--fg);color:var(--bg);
+  padding:4px 10px;font-size:12px;letter-spacing:2px;
+  vertical-align:middle;margin-right:10px;transform:translateY(-4px);
+}
+.section-sub{font-size:14px;opacity:.75;max-width:480px;margin-top:8px}
+
+/* Console Layout */
+.console-wrap{
+  display:grid;grid-template-columns:1fr;gap:24px;
+}
+.console-grid{
+  display:grid;grid-template-columns:200px 1fr 200px;gap:16px;
+  align-items:start;
+}
+.hud-panel{
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow);
+  padding:14px;
+  display:grid;gap:10px;
+}
+.hud-panel h4{
+  font-family:var(--font-display);font-size:11px;letter-spacing:2px;
+  padding-bottom:6px;border-bottom:2px solid #000;margin-bottom:4px;
+}
+.hud-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-family:var(--font-mono)}
+.hud-row .label{opacity:.7;text-transform:uppercase;letter-spacing:1px;font-size:10px}
+.hud-row .val{font-weight:700}
+.hud-btn{
+  font-family:var(--font-display);font-size:11px;letter-spacing:1px;
+  padding:8px 10px;border:2px solid #000;background:var(--bg);
+  box-shadow:3px 3px 0 #000;transition:all .1s;
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  width:100%;text-align:left;
+}
+.hud-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #000}
+.hud-btn:active{transform:translate(2px,2px);box-shadow:0 0 0 #000}
+.hud-btn.active{background:var(--accent);color:#fff}
+.hud-btn .v{font-family:var(--font-mono);font-size:10px;background:#000;color:var(--bg);padding:1px 5px}
+.hud-btn.active .v{background:#fff;color:#000}
+
+/* Screen Frame — wraps the EmulatorJS container */
+.screen-frame{
+  background:var(--fg);border:var(--border);box-shadow:var(--shadow-lg);
+  padding:18px;position:relative;
+}
+.screen-frame::before{
+  content:'PBL · POWER';position:absolute;top:-3px;left:18px;
+  background:var(--accent);color:#fff;padding:2px 12px;
+  border:var(--border);font-family:var(--font-display);font-size:11px;letter-spacing:2px;
+  transform:translateY(-50%);
+}
+.screen-frame::after{
+  content:'';position:absolute;top:14px;right:18px;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--green);border:2px solid #000;
+  box-shadow:0 0 8px var(--green);animation:blink 1.4s infinite;
+}
+.screen-inner{
+  background:#000;padding:8px;position:relative;
+  border:2px solid #444;
+  overflow:hidden;
+  aspect-ratio:4/3;
+}
+/* EmulatorJS canvas fills the inner container */
+.screen-inner canvas,
+.screen-inner .ejs_game,
+.screen-inner > div {
+  width:100% !important;
+  height:100% !important;
+}
+#ejs-container {
+  width:100%;
+  height:100%;
+  position:relative;
+  background:#000;
+}
+/* Hide EmulatorJS UI completely — we have our own */
+#ejs-container .ejs_start_button,
+#ejs-container .ejs_menu_bar,
+#ejs-container .ejs_settings_parent,
+#ejs-container .ejs_virtualGamepad_parent,
+#ejs-container .ejs_message,
+#ejs-container .ejs_ad_iframe,
+#ejs-container .ejs_game_over,
+#ejs-container .ejs_loading,
+#ejs-container .ejs_progress,
+#ejs-container .ejs_control_menu,
+#ejs-container .ejs_popup_container,
+#ejs-container .ejs_netplay_header,
+#ejs-container .ejs_settings_menu,
+#ejs-container .ejs_save_state_parent,
+#ejs-container .ejs_cache_manager {
+  display:none !important;
+}
+#ejs-container .ejs_game {
+  width:100% !important;
+  height:100% !important;
+  background:#000 !important;
+}
+#ejs-container canvas {
+  width:100% !important;
+  height:100% !important;
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+}
+#ejs-container canvas.smooth {
+  image-rendering:auto;
+}
+
+.screen-filter-overlay{
+  position:absolute;inset:8px;pointer-events:none;z-index:3;
+  background:transparent;
+}
+.screen-filter-overlay.scanlines{
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0.25) 0px,rgba(0,0,0,0.25) 1px,transparent 1px,transparent 3px);
+}
+.screen-filter-overlay.crt{
+  background:
+    repeating-linear-gradient(90deg,rgba(255,0,0,0.06) 0px,rgba(0,255,0,0.06) 1px,rgba(0,0,255,0.06) 2px,transparent 3px),
+    repeating-linear-gradient(0deg,rgba(0,0,0,0.30) 0px,rgba(0,0,0,0.30) 1px,transparent 1px,transparent 3px);
+  mix-blend-mode:multiply;
+}
+.screen-overlay{
+  position:absolute;inset:8px;display:grid;place-items:center;
+  background:rgba(0,0,0,.92);color:var(--bg);text-align:center;
+  font-family:var(--font-mono);font-size:13px;line-height:1.6;padding:20px;
+  z-index:5;
+}
+.screen-overlay.hidden{display:none}
+.screen-overlay h3{
+  font-family:var(--font-display);font-size:20px;color:var(--accent);
+  margin-bottom:8px;letter-spacing:2px;
+}
+.screen-overlay .blink{animation:blink 1s infinite;color:var(--cyan)}
+.screen-overlay .hint{font-size:11px;opacity:.7;margin-top:12px}
+.screen-watermark{
+  position:absolute;bottom:10px;right:14px;z-index:4;
+  font-family:var(--font-display);font-size:10px;letter-spacing:2px;
+  color:rgba(255,255,255,.18);pointer-events:none;
+}
+@media (max-width:1024px){
+  .console-grid{grid-template-columns:1fr;gap:16px}
+  .hud-panel{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+  .hud-panel h4{grid-column:1/-1}
+}
+@media (max-width:640px){
+  .screen-frame{padding:14px}
+  .screen-frame::before{font-size:10px;left:14px}
+}
+
+/* Touch Controls (mobile-first when active) */
+.touch-controls{
+  display:none;margin-top:16px;
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow);
+  padding:24px 16px;
+}
+.touch-controls.visible{display:block}
+.touch-grid{
+  display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;
+}
+.dpad{
+  position:relative;width:140px;height:140px;margin:0 auto;
+}
+.dpad-btn{
+  position:absolute;background:var(--fg);color:var(--bg);
+  border:2px solid #000;box-shadow:3px 3px 0 #000;
+  display:grid;place-items:center;
+  font-family:var(--font-display);font-size:18px;
+  transition:all .08s;user-select:none;-webkit-user-select:none;
+  touch-action:none;
+}
+.dpad-btn:active,.dpad-btn.pressed{background:var(--accent);transform:translate(2px,2px);box-shadow:0 0 0 #000}
+.dpad-up{top:0;left:50px;width:40px;height:50px}
+.dpad-down{bottom:0;left:50px;width:40px;height:50px}
+.dpad-left{top:50px;left:0;width:50px;height:40px}
+.dpad-right{top:50px;right:0;width:50px;height:40px}
+.dpad-center{top:50px;left:50px;width:40px;height:40px;background:#444}
+
+.touch-center{
+  display:grid;gap:14px;justify-items:center;
+}
+.start-select-row{display:flex;gap:14px}
+.btn-pill{
+  background:var(--bg);border:2px solid #000;box-shadow:3px 3px 0 #000;
+  padding:6px 14px;font-family:var(--font-display);font-size:10px;letter-spacing:1.5px;
+  border-radius:20px;transition:all .08s;
+}
+.btn-pill:active,.btn-pill.pressed{background:var(--accent);color:#fff;transform:translate(2px,2px);box-shadow:0 0 0 #000}
+
+/* Analog stick */
+.analog-stick{
+  width:90px;height:90px;border-radius:50%;
+  border:3px solid #000;background:var(--bg);
+  box-shadow:var(--shadow-sm);
+  position:relative;margin:0 auto;
+  touch-action:none;
+}
+.analog-knob{
+  position:absolute;width:40px;height:40px;border-radius:50%;
+  background:var(--fg);border:2px solid #000;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  transition:transform .08s;
+  pointer-events:none;
+}
+
+/* PS1-style △○×□ cluster (4 buttons in diamond) */
+.psx-buttons-group{
+  position:relative;width:160px;height:160px;margin:0 auto;
+}
+.psx-btn{
+  position:absolute;width:58px;height:58px;border-radius:50%;
+  border:2px solid #000;box-shadow:4px 4px 0 #000;
+  display:grid;place-items:center;
+  font-family:var(--font-display);font-size:22px;
+  transition:all .08s;user-select:none;-webkit-user-select:none;
+  touch-action:none;
+}
+.psx-btn:active,.psx-btn.pressed{transform:translate(3px,3px);box-shadow:0 0 0 #000}
+.btn-tri{background:var(--green);color:#000;top:0;left:51px}
+.btn-cir{background:var(--magenta);color:#fff;top:51px;right:0}
+.btn-cro{background:var(--cyan);color:#000;bottom:0;left:51px}
+.btn-squ{background:var(--purple);color:#fff;top:51px;left:0}
+
+.shoulder-row{display:flex;justify-content:space-between;margin-top:14px;gap:10px}
+.btn-shoulder{
+  flex:1;background:var(--fg);color:var(--bg);
+  border:2px solid #000;box-shadow:3px 3px 0 #000;
+  padding:10px;font-family:var(--font-display);font-size:13px;
+  transition:all .08s;
+}
+.btn-shoulder:active,.btn-shoulder.pressed{background:var(--accent);transform:translate(2px,2px);box-shadow:0 0 0 #000}
+
+/* ============== LIBRARY ============== */
+.library-section{padding:60px 24px;background:var(--fg);color:var(--bg);border-top:var(--border);border-bottom:var(--border)}
+.library-wrap{max-width:1400px;margin:0 auto}
+.library-section .section-title{color:var(--bg)}
+.library-section .section-title .tag{background:var(--accent);color:#fff}
+.library-section .section-sub{color:rgba(255,248,231,.7)}
+.drop-zone{
+  border:3px dashed rgba(255,248,231,.4);
+  padding:48px 24px;text-align:center;margin-bottom:32px;
+  transition:all .2s;cursor:pointer;
+  background:rgba(255,248,231,.04);
+}
+.drop-zone.dragging{
+  border-color:var(--accent);background:rgba(255,107,53,.15);
+  transform:scale(1.01);
+}
+.drop-zone-icon{
+  width:60px;height:60px;margin:0 auto 16px;
+  background:var(--accent);border:var(--border);box-shadow:var(--shadow-sm);
+  display:grid;place-items:center;font-size:28px;font-family:var(--font-display);
+}
+.drop-zone h3{font-family:var(--font-display);font-size:24px;margin-bottom:8px;letter-spacing:-0.5px}
+.drop-zone p{opacity:.7;font-size:14px;margin-bottom:18px}
+.drop-zone .btn{margin:0 auto}
+
+.lib-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;
+}
+.lib-card{
+  background:var(--bg);color:var(--fg);
+  border:var(--border);box-shadow:var(--shadow);
+  padding:12px;transition:all .15s;cursor:pointer;
+  display:flex;flex-direction:column;gap:8px;
+}
+.lib-card:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow-lg)}
+.lib-card.playing{background:var(--accent);color:#fff}
+.lib-thumb{
+  aspect-ratio:4/3;background:var(--fg);
+  border:2px solid #000;display:grid;place-items:center;
+  position:relative;overflow:hidden;
+}
+.lib-thumb .placeholder{
+  font-family:var(--font-display);color:var(--bg);font-size:14px;
+  text-align:center;padding:6px;letter-spacing:1px;
+}
+.lib-thumb .play-icon{
+  position:absolute;inset:0;background:rgba(0,0,0,.7);
+  display:grid;place-items:center;color:var(--accent);
+  font-size:36px;font-family:var(--font-display);
+  opacity:0;transition:opacity .15s;
+}
+.lib-card:hover .lib-thumb .play-icon{opacity:1}
+.lib-card.playing .lib-thumb{background:#fff}
+.lib-card.playing .lib-thumb .placeholder{color:var(--accent)}
+.lib-info{display:flex;flex-direction:column;gap:4px}
+.lib-name{font-family:var(--font-display);font-size:13px;line-height:1.2;letter-spacing:-0.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.lib-meta{display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);opacity:.7}
+.lib-actions{display:flex;gap:6px;margin-top:4px}
+.lib-action{
+  flex:1;font-family:var(--font-display);font-size:9px;letter-spacing:1px;
+  padding:6px 4px;border:2px solid #000;background:var(--bg);
+  box-shadow:2px 2px 0 #000;transition:all .1s;
+}
+.lib-action:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000}
+.lib-action.danger{background:var(--magenta);color:#fff}
+.lib-empty{
+  text-align:center;padding:48px 24px;
+  border:3px dashed rgba(255,248,231,.3);
+  font-family:var(--font-display);font-size:14px;letter-spacing:1px;opacity:.6;
+}
+
+/* ============== FEATURES SECTION ============== */
+.features-section{padding:60px 24px;max-width:1400px;margin:0 auto}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.feature{
+  border:var(--border);box-shadow:var(--shadow);padding:24px;
+  background:var(--bg);transition:all .15s;
+}
+.feature:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow-lg)}
+.feature-num{
+  font-family:var(--font-display);font-size:42px;line-height:1;
+  color:var(--accent);margin-bottom:8px;
+}
+.feature:nth-child(2) .feature-num{color:var(--cyan)}
+.feature:nth-child(3) .feature-num{color:var(--yellow);-webkit-text-stroke:1px #000}
+.feature:nth-child(4) .feature-num{color:var(--green)}
+.feature:nth-child(5) .feature-num{color:var(--magenta)}
+.feature:nth-child(6) .feature-num{color:var(--purple)}
+.feature:nth-child(7) .feature-num{color:var(--accent)}
+.feature:nth-child(8) .feature-num{color:var(--cyan)}
+.feature h3{font-family:var(--font-display);font-size:20px;margin-bottom:10px;letter-spacing:-0.5px}
+.feature p{font-size:14px;line-height:1.5}
+
+/* ============== INSTRUCTIONS ============== */
+.howto-section{
+  padding:60px 24px;background:var(--cyan);
+  border-top:var(--border);border-bottom:var(--border);
+}
+.howto-wrap{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:1fr 1.2fr;gap:32px;align-items:start}
+.howto-section .section-title{margin-bottom:16px}
+.steps{display:grid;gap:14px}
+.step{
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow-sm);
+  padding:18px;display:flex;gap:16px;align-items:flex-start;
+}
+.step-n{
+  font-family:var(--font-display);font-size:32px;line-height:1;
+  background:var(--fg);color:var(--bg);
+  width:48px;height:48px;display:grid;place-items:center;
+  border:2px solid #000;flex-shrink:0;
+}
+.step-content h4{font-family:var(--font-display);font-size:15px;margin-bottom:4px;letter-spacing:-0.3px}
+.step-content p{font-size:13px;line-height:1.5;opacity:.85}
+.kbd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.kbd-row{
+  background:var(--bg);border:2px solid #000;padding:10px 12px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  font-size:13px;
+}
+.kbd-row .key{
+  font-family:var(--font-mono);font-weight:700;font-size:11px;
+  background:var(--fg);color:var(--bg);padding:4px 8px;
+  border:1px solid #000;
+}
+@media (max-width:900px){.howto-wrap{grid-template-columns:1fr}}
+
+/* ============== FOOTER ============== */
+.footer{
+  background:var(--fg);color:var(--bg);padding:48px 24px 24px;
+  border-top:var(--border);
+}
+.footer-wrap{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:32px}
+.footer-brand{display:flex;flex-direction:column;gap:12px}
+.footer-brand .logo{color:var(--bg)}
+.footer-brand p{font-size:13px;opacity:.7;max-width:380px;line-height:1.6}
+.footer h4{font-family:var(--font-display);font-size:13px;letter-spacing:2px;margin-bottom:14px;color:var(--accent)}
+.footer ul{display:grid;gap:8px;font-size:13px}
+.footer a{opacity:.8;transition:opacity .15s}
+.footer a:hover{opacity:1;color:var(--cyan)}
+.footer-bottom{
+  margin-top:32px;padding-top:20px;border-top:2px solid rgba(255,248,231,.15);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-size:11px;opacity:.5;font-family:var(--font-mono);letter-spacing:1px;
+}
+@media (max-width:768px){.footer-wrap{grid-template-columns:1fr;gap:24px}}
+
+/* ============== MODAL ============== */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;
+  display:none;align-items:center;justify-content:center;padding:20px;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.visible{display:flex}
+.modal{
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow-lg);
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+  position:relative;
+}
+.modal-head{
+  padding:18px 20px;background:var(--accent);color:#fff;
+  border-bottom:var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:0;
+}
+.modal-head.cyan{background:var(--cyan);color:#000}
+.modal-head.yellow{background:var(--yellow)}
+.modal-head.dark{background:var(--fg);color:var(--bg)}
+.modal-head.magenta{background:var(--magenta);color:#fff}
+.modal-head h2{font-family:var(--font-display);font-size:18px;letter-spacing:1px}
+.modal-close{
+  width:32px;height:32px;background:#fff;color:#000;
+  border:2px solid #000;box-shadow:2px 2px 0 #000;
+  display:grid;place-items:center;font-family:var(--font-display);font-size:16px;
+}
+.modal-close:active{transform:translate(2px,2px);box-shadow:0 0 0 #000}
+.modal-body{padding:20px;display:grid;gap:14px}
+
+/* Save Slots */
+.save-slot{
+  background:var(--bg);border:2px solid #000;box-shadow:3px 3px 0 #000;
+  padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  transition:all .12s;
+}
+.save-slot:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #000}
+.save-slot.empty{opacity:.6}
+.save-slot .info{flex:1;min-width:0}
+.save-slot .slot-n{font-family:var(--font-display);font-size:13px;letter-spacing:1px;color:var(--accent)}
+.save-slot .slot-meta{font-size:11px;font-family:var(--font-mono);opacity:.7;margin-top:2px}
+.save-slot-actions{display:flex;gap:6px}
+.slot-btn{
+  font-family:var(--font-display);font-size:10px;letter-spacing:1px;
+  padding:6px 10px;border:2px solid #000;background:var(--bg);
+  box-shadow:2px 2px 0 #000;transition:all .1s;
+}
+.slot-btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000}
+.slot-btn:active{transform:translate(1px,1px);box-shadow:0 0 0 #000}
+.slot-btn.save{background:var(--green)}
+.slot-btn.load{background:var(--cyan)}
+.slot-btn.del{background:var(--magenta);color:#fff}
+
+/* Key Mapping */
+.kbd-map-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 12px;background:var(--bg);border:2px solid #000;
+}
+.kbd-map-row .gba-key{
+  font-family:var(--font-display);font-size:14px;
+  background:var(--accent);color:#fff;padding:4px 12px;border:2px solid #000;
+}
+.kbd-map-btn{
+  font-family:var(--font-mono);font-size:12px;font-weight:700;
+  padding:6px 12px;background:var(--fg);color:var(--bg);
+  border:2px solid #000;box-shadow:2px 2px 0 #000;min-width:80px;
+}
+.kbd-map-btn:hover{background:var(--cyan);color:#000}
+
+/* Settings */
+.settings-group{display:grid;gap:14px}
+.setting-row{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:12px;background:var(--bg);border:2px solid #000;
+}
+.setting-row .lbl{font-family:var(--font-display);font-size:13px;letter-spacing:0.5px}
+.setting-row .desc{font-size:11px;opacity:.7;margin-top:2px}
+.toggle{
+  position:relative;width:54px;height:28px;background:var(--bg);
+  border:2px solid #000;cursor:pointer;flex-shrink:0;
+}
+.toggle::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:20px;height:20px;background:var(--fg);
+  transition:transform .2s;
+}
+.toggle.on{background:var(--green)}
+.toggle.on::after{transform:translateX(26px);background:var(--fg)}
+.slider-row{display:flex;align-items:center;gap:12px}
+.slider{
+  flex:1;-webkit-appearance:none;appearance:none;height:8px;
+  background:var(--bg);border:2px solid #000;outline:none;
+}
+.slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:22px;height:22px;background:var(--accent);
+  border:2px solid #000;cursor:pointer;
+}
+.slider::-moz-range-thumb{
+  width:22px;height:22px;background:var(--accent);
+  border:2px solid #000;cursor:pointer;
+}
+.slider-val{
+  font-family:var(--font-mono);font-size:12px;font-weight:700;
+  min-width:40px;text-align:right;
+}
+
+/* Cheats */
+.cheat-row{
+  background:var(--bg);border:2px solid #000;padding:10px 12px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.cheat-row .row{display:flex;gap:8px;align-items:center}
+.cheat-input{
+  flex:1;font-family:var(--font-mono);font-size:13px;
+  padding:6px 8px;border:2px solid #000;background:#fff;
+  text-transform:uppercase;
+}
+.cheat-input.code{max-width:200px;letter-spacing:1px}
+.cheat-input.desc{font-family:var(--font-body);text-transform:none}
+.cheat-toggle{
+  font-family:var(--font-display);font-size:11px;letter-spacing:1px;
+  padding:6px 10px;border:2px solid #000;background:var(--bg);
+  box-shadow:2px 2px 0 #000;
+}
+.cheat-toggle.on{background:var(--green)}
+.cheat-del{
+  font-family:var(--font-display);font-size:11px;
+  padding:6px 10px;border:2px solid #000;background:var(--magenta);color:#fff;
+  box-shadow:2px 2px 0 #000;
+}
+
+/* Disc swap */
+.disc-slot{
+  background:var(--bg);border:2px solid #000;padding:10px 12px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.disc-slot.active{background:var(--cyan)}
+.disc-slot .info{flex:1}
+.disc-slot .name{font-family:var(--font-display);font-size:13px}
+.disc-slot .meta{font-size:11px;font-family:var(--font-mono);opacity:.7}
+
+/* ============== TOAST ============== */
+.toast-container{
+  position:fixed;bottom:20px;right:20px;z-index:200;
+  display:flex;flex-direction:column;gap:10px;
+  pointer-events:none;max-width:calc(100vw - 40px);
+}
+.toast{
+  background:var(--fg);color:var(--bg);border:var(--border);
+  box-shadow:var(--shadow);padding:12px 16px;
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;font-family:var(--font-mono);
+  animation:toast-in .25s ease-out;max-width:360px;
+  pointer-events:auto;
+}
+.toast.success{background:var(--green);color:#000}
+.toast.error{background:var(--magenta);color:#fff}
+.toast.info{background:var(--cyan);color:#000}
+.toast .t-icon{font-family:var(--font-display);font-size:16px}
+@keyframes toast-in{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.removing{animation:toast-out .2s ease-in forwards}
+@keyframes toast-out{to{transform:translateX(120%);opacity:0}}
+
+/* ============== DRAG OVERLAY ============== */
+.drag-overlay{
+  position:fixed;inset:0;z-index:300;background:rgba(255,107,53,.92);
+  display:none;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.drag-overlay.visible{display:flex}
+.drag-overlay .msg{
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow-lg);
+  padding:32px 48px;text-align:center;font-family:var(--font-display);
+  font-size:24px;letter-spacing:1px;
+}
+.drag-overlay .msg .icon{font-size:48px;color:var(--accent);margin-bottom:12px}
+
+/* ============== FULLSCREEN MODE ============== */
+body.fullscreen-mode{
+  background:#000;overflow:hidden;
+}
+body.fullscreen-mode .header,
+body.fullscreen-mode .marquee,
+body.fullscreen-mode .hero,
+body.fullscreen-mode .features-section,
+body.fullscreen-mode .howto-section,
+body.fullscreen-mode .library-section,
+body.fullscreen-mode .footer{display:none}
+body.fullscreen-mode .console-section{
+  padding:0;max-width:100%;min-height:100vh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+body.fullscreen-mode .console-wrap{gap:8px}
+body.fullscreen-mode .section-header{display:none}
+body.fullscreen-mode .console-grid{grid-template-columns:1fr 2fr 1fr;gap:8px;align-items:center}
+body.fullscreen-mode .hud-panel{background:rgba(0,0,0,.85);color:#fff;border-color:#fff;box-shadow:none}
+body.fullscreen-mode .hud-panel h4{color:var(--cyan);border-color:#fff}
+body.fullscreen-mode .hud-btn{background:rgba(255,255,255,.1);color:#fff;border-color:#fff;box-shadow:none}
+body.fullscreen-mode .screen-frame{background:#000;border-color:#fff}
+body.fullscreen-mode .touch-controls{display:block;background:#000;border-color:#fff;box-shadow:none}
+@media (max-width:900px){
+  body.fullscreen-mode .console-grid{grid-template-columns:1fr}
+  body.fullscreen-mode .hud-panel{display:none}
+  body.fullscreen-mode .touch-controls{padding:14px 8px}
+  body.fullscreen-mode .touch-controls.visible{display:block}
+}
+
+/* ============== MOBILE LAYOUT ============== */
+@media (max-width:640px){
+  .console-grid{grid-template-columns:1fr}
+  .hero-cta{flex-direction:column;align-items:stretch}
+  .btn{justify-content:center}
+  .lib-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .lib-card{padding:8px}
+  .lib-name{font-size:11px}
+  .features-grid{grid-template-columns:1fr}
+  .step{padding:14px;gap:12px}
+  .step-n{width:40px;height:40px;font-size:24px}
+}
+
+/* Orientation hint for mobile portrait */
+.orientation-hint{
+  display:none;position:fixed;inset:0;z-index:400;
+  background:var(--fg);color:var(--bg);
+  align-items:center;justify-content:center;text-align:center;
+  padding:24px;
+}
+.orientation-hint.visible{display:flex}
+.orientation-hint .icon{
+  font-size:64px;margin-bottom:16px;animation:rotate 2s infinite;
+}
+.orientation-hint h2{font-family:var(--font-display);font-size:24px;letter-spacing:1px;margin-bottom:8px}
+.orientation-hint p{opacity:.7;font-size:14px}
+@keyframes rotate{0%,50%{transform:rotate(0)}60%,90%{transform:rotate(90deg)}}
+@media (max-width:768px) and (orientation:portrait){
+  body.want-landscape .orientation-hint{display:flex}
+}
+
+/* Print / reduced motion */
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============== MARQUEE ============== -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span class="star">★</span><span>BOTA O JOGO PRA RODAR</span>
+    <span class="star">★</span><span>PLAY ULTIMATE</span>
+    <span class="star">★</span><span>PILHA CHEIA</span>
+    <span class="star">★</span><span>PBL · 2026</span>
+    <span class="star">★</span><span>By Big0u5</span>
+    <span class="star">★</span><span>BOTA O JOGO PRA RODAR</span>
+    <span class="star">★</span><span>PLAY ULTIMATE</span>
+    <span class="star">★</span><span>PILHA CHEIA</span>
+    <span class="star">★</span><span>PBL · 2026</span>
+    <span class="star">★</span><span>By Big0u5</span>
+  </div>
+</div>
+
+<!-- ============== HEADER ============== -->
+<header class="header">
+  <a href="#" class="logo">
+    <div class="logo-badge">PBL</div>
+    <span>PBL · PLAY 1 ULTIMATE</span>
+  </a>
+  <nav class="nav">
+    <button class="nav-btn cyan" onclick="document.getElementById('console').scrollIntoView({behavior:'smooth'})">CONSOLE</button>
+    <button class="nav-btn yellow" onclick="document.getElementById('library').scrollIntoView({behavior:'smooth'})">BIBLIOTECA</button>
+    <button class="nav-btn" onclick="openSettings()">AJUSTES</button>
+    <button class="nav-btn accent" onclick="document.getElementById('library').scrollIntoView({behavior:'smooth'})">BORA JOGAR</button>
+  </nav>
+</header>
+
+<!-- ============== HERO ============== -->
+<section class="hero">
+  <div>
+    <h1 class="hero-title">
+      <span class="l1">PLAY 1</span>
+      <span class="l2">ULTIMATE</span>
+      <span class="l3">// 32 BITS RETRÔ</span>
+    </h1>
+    <p class="hero-sub">
+      O <b>super simulador de PlayStation 1</b> que roda direto no navegador — sem instalar nada, sem login, sem firula.
+      Carrega tua ROM .bin/.cue/.img/.pbp, aperta START e <b>BOA</b>. Neo-brutalista, viciante e 100% responsivo.
+    </p>
+    <div class="hero-cta">
+      <button class="btn btn-primary" onclick="triggerRomUpload()">
+        <span>CARREGAR ROM</span><span class="arrow">▶</span>
+      </button>
+      <button class="btn btn-cyan" onclick="document.getElementById('console').scrollIntoView({behavior:'smooth'})">
+        <span>VER CONSOLE</span><span class="arrow">↓</span>
+      </button>
+      <button class="btn btn-dark" onclick="openSettings()">
+        <span>AJUSTES</span><span class="arrow">⚙</span>
+      </button>
+    </div>
+  </div>
+  <aside class="hero-card">
+    <h3>POR QUE PBL?</h3>
+    <ul>
+      <li>Núcleo PCSX-ReARMed WASM — compatibilidade alta</li>
+      <li>HLE — roda SEM BIOS (sem complicação)</li>
+      <li>Roda no mobile, tablet e desktop — 100% responsivo</li>
+      <li>2 memory cards virtuais (128KB cada)</li>
+      <li>Save states em 5 slots (chega de perder progresso)</li>
+      <li>Controles touch + analog stick pra jogos 3D</li>
+      <li>Turbo 1x-4x para farming intensivo</li>
+      <li>Cheats Game Shark + disc swap (multi-CD)</li>
+      <li>Sem tracker, sem cookies, sem coleta de dados</li>
+    </ul>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="n">2</div><div class="l">MEM CARDS</div></div>
+      <div class="hero-stat"><div class="n">5</div><div class="l">SLOTS</div></div>
+      <div class="hero-stat"><div class="n">32</div><div class="l">BITS</div></div>
+    </div>
+  </aside>
+</section>
+
+<!-- ============== CONSOLE ============== -->
+<section class="console-section" id="console">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title"><span class="tag">CONSOLE</span>O JOGO TÁ ON</h2>
+      <p class="section-sub">Carrega uma ROM, escolhe o slot de save e manda bala. Os controles touch aparecem automáticos no mobile.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="nav-btn" onclick="toggleFullscreen()" id="fullscreenBtn">⛶ TELA CHEIA</button>
+      <button class="nav-btn cyan" onclick="toggleTouch()" id="touchToggleBtn">▲ CONTROLES</button>
+    </div>
+  </div>
+
+  <div class="console-wrap">
+    <div class="console-grid">
+      <!-- LEFT HUD -->
+      <aside class="hud-panel">
+        <h4>ESTADO</h4>
+        <div class="hud-row"><span class="label">STATUS</span><span class="val" id="hud-status">PARADO</span></div>
+        <div class="hud-row"><span class="label">FPS</span><span class="val" id="hud-fps">--</span></div>
+        <div class="hud-row"><span class="label">SPEED</span><span class="val" id="hud-speed">1x</span></div>
+        <div class="hud-row"><span class="label">ROM</span><span class="val" id="hud-rom" style="font-size:10px;max-width:90px;overflow:hidden;text-overflow:ellipsis;text-align:right">NENHUMA</span></div>
+        <h4 style="margin-top:8px">PLAYBACK</h4>
+        <button class="hud-btn" id="btnPlay" onclick="togglePlay()">
+          <span>▶ PLAY</span><span class="v">␣</span>
+        </button>
+        <button class="hud-btn" id="btnPause" onclick="togglePlay()">
+          <span>⏸ PAUSE</span><span class="v">␣</span>
+        </button>
+        <button class="hud-btn" id="btnRestart" onclick="restartGame()">
+          <span>↻ RESET</span><span class="v">⌫</span>
+        </button>
+        <h4 style="margin-top:8px">TURBO</h4>
+        <button class="hud-btn" onclick="setSpeed(1)" data-speed="1"><span>1x NORMAL</span><span class="v">1</span></button>
+        <button class="hud-btn" onclick="setSpeed(2)" data-speed="2"><span>2x RÁPIDO</span><span class="v">2</span></button>
+        <button class="hud-btn" onclick="setSpeed(3)" data-speed="3"><span>3x TURBO</span><span class="v">3</span></button>
+        <button class="hud-btn" onclick="setSpeed(4)" data-speed="4"><span>4x LOUCURA</span><span class="v">4</span></button>
+      </aside>
+
+      <!-- SCREEN -->
+      <div class="screen-frame">
+        <div class="screen-inner">
+          <div id="ejs-container"></div>
+          <div class="screen-filter-overlay" id="filterOverlay"></div>
+          <div class="screen-watermark">PBL · PLAY ULTIMATE</div>
+          <div class="screen-overlay" id="screenOverlay">
+            <div>
+              <h3>SEM ROM CARREGADA</h3>
+              <p>Arrasta um arquivo <b>.bin</b> / <b>.cue</b> / <b>.img</b> / <b>.pbp</b> aqui<br>ou clica no botão abaixo.</p>
+              <p class="blink" style="margin-top:14px">▼ BORA JOGAR ▼</p>
+              <p class="hint">Dica: também funciona com .zip · HLE (sem BIOS)</p>
+              <button class="btn btn-primary" style="margin-top:18px" onclick="triggerRomUpload()">
+                <span>CARREGAR ROM</span><span class="arrow">▶</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT HUD -->
+      <aside class="hud-panel">
+        <h4>ÁUDIO</h4>
+        <div class="setting-row" style="padding:8px">
+          <span class="lbl" style="font-size:11px">VOLUME</span>
+          <div class="slider-row" style="flex:1;max-width:110px">
+            <input type="range" class="slider" id="volumeSlider" min="0" max="100" value="80">
+            <span class="slider-val" id="volumeVal">80%</span>
+          </div>
+        </div>
+        <button class="hud-btn" id="btnMute" onclick="toggleMute()"><span>♪ MUTE</span><span class="v">M</span></button>
+        <h4 style="margin-top:8px">SAVE STATES</h4>
+        <button class="hud-btn" onclick="openSaveStates()"><span>💾 SAVE / LOAD</span><span class="v">F5</span></button>
+        <button class="hud-btn" onclick="quickSave()"><span>⚡ QUICK SAVE</span><span class="v">S</span></button>
+        <button class="hud-btn cyan" onclick="quickLoad()"><span>⚡ QUICK LOAD</span><span class="v">L</span></button>
+        <h4 style="margin-top:8px>FILTROS</h4>
+        <button class="hud-btn" data-filter="pixelated" onclick="setFilter('pixelated')"><span>◉ PIXELADO</span><span class="v">P</span></button>
+        <button class="hud-btn" data-filter="smooth" onclick="setFilter('smooth')"><span>○ SUAVE</span><span class="v">S</span></button>
+        <button class="hud-btn" data-filter="scanlines" onclick="setFilter('scanlines')"><span>≡ SCANLINES</span><span class="v">L</span></button>
+        <button class="hud-btn" data-filter="crt" onclick="setFilter('crt')"><span>▣ CRT</span><span class="v">C</span></button>
+        <h4 style="margin-top:8px>SISTEMA</h4>
+        <button class="hud-btn" onclick="openKeymap()"><span>⌨ KEY MAP</span><span class="v">K</span></button>
+        <button class="hud-btn" onclick="openCheats()"><span>🎮 CHEATS</span><span class="v">H</span></button>
+        <button class="hud-btn" onclick="openDiscs()"><span>💿 DISC SWAP</span><span class="v">D</span></button>
+        <button class="hud-btn" onclick="openMemoryCards()"><span>💾 MEM CARDS</span><span class="v">E</span></button>
+        <button class="hud-btn" onclick="takeScreenshot()"><span>📸 SCREENSHOT</span><span class="v">P</span></button>
+        <button class="hud-btn" onclick="openSettings()"><span>⚙ AJUSTES</span><span class="v">,</span></button>
+        <button class="hud-btn" onclick="toggleFullscreen()"><span>⛶ FULLSCREEN</span><span class="v">F</span></button>
+      </aside>
+    </div>
+
+    <!-- TOUCH CONTROLS -->
+    <div class="touch-controls" id="touchControls">
+      <div class="shoulder-row">
+        <button class="btn-shoulder" data-key="17">L2</button>
+        <button class="btn-shoulder" data-key="19">L1</button>
+        <button class="btn-shoulder" data-key="18">R2</button>
+        <button class="btn-shoulder" data-key="20">R1</button>
+      </div>
+      <div class="touch-grid">
+        <!-- D-PAD + ANALOG -->
+        <div style="display:grid;gap:14px;justify-items:center">
+          <div class="dpad">
+            <button class="dpad-btn dpad-up" data-key="1">▲</button>
+            <button class="dpad-btn dpad-down" data-key="2">▼</button>
+            <button class="dpad-btn dpad-left" data-key="3">◀</button>
+            <button class="dpad-btn dpad-right" data-key="4">▶</button>
+            <div class="dpad-btn dpad-center"></div>
+          </div>
+          <div class="analog-stick" id="analogStick">
+            <div class="analog-knob" id="analogKnob"></div>
+          </div>
+        </div>
+        <!-- CENTER -->
+        <div class="touch-center">
+          <div class="start-select-row">
+            <button class="btn-pill" data-key="8">SELECT</button>
+            <button class="btn-pill" data-key="9">START</button>
+          </div>
+        </div>
+        <!-- △○×□ (PS1 layout: △ on top, ○ on right, × on bottom, □ on left) -->
+        <div class="psx-buttons-group">
+          <button class="psx-btn btn-tri" data-key="12">△</button>
+          <button class="psx-btn btn-cir" data-key="13">○</button>
+          <button class="psx-btn btn-cro" data-key="14">×</button>
+          <button class="psx-btn btn-squ" data-key="15">□</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== LIBRARY ============== -->
+<section class="library-section" id="library">
+  <div class="library-wrap">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title"><span class="tag">BIBLIOTECA</span>TUA COLEÇÃO</h2>
+        <p class="section-sub">As ROMs que tu carrega ficam salvas aqui no teu navegador. Pode fechar a aba que tudo continua lá. Bora buildar o acervo.</p>
+      </div>
+    </div>
+
+    <div class="drop-zone" id="dropZone" onclick="triggerRomUpload()">
+      <div class="drop-zone-icon">▼</div>
+      <h3>ARRASTA TUA ROM AQUI</h3>
+      <p>ou clica pra escolher um arquivo <b>.bin</b> / <b>.cue</b> / <b>.img</b> / <b>.pbp</b> / <b>.zip</b></p>
+      <button class="btn btn-primary" onclick="event.stopPropagation();triggerRomUpload()">
+        <span>ESCOLHER ARQUIVO</span><span class="arrow">▶</span>
+      </button>
+    </div>
+
+    <div id="libGrid" class="lib-grid"></div>
+    <div id="libEmpty" class="lib-empty">
+      // BIBLIOTECA VAZIA — CARREGA TUA PRIMEIRA ROM PRA COMEÇAR
+    </div>
+  </div>
+</section>
+
+<!-- ============== FEATURES ============== -->
+<section class="features-section">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title"><span class="tag">FEATURES</span>TUDO QUE TEM</h2>
+      <p class="section-sub">O que faz do PBL o super simulador PS1 definitivo pra 2026.</p>
+    </div>
+  </div>
+  <div class="features-grid">
+    <div class="feature">
+      <div class="feature-num">01</div>
+      <h3>SAVE STATES</h3>
+      <p>5 slots independentes por jogo, mais quick save/load com um toque. Chega de repetir chefão por causa de queda de luz.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">02</div>
+      <h3>TURBO MODE</h3>
+      <p>Velocidade ajustável de 1x até 4x pra acelerar grind, skip cutscene ou farmar EXP. Tu manda no ritmo.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">03</div>
+      <h3>CONTROLES TOUCH</h3>
+      <p>D-pad + △○×□ + L1/L2/R1/R2 + analog stick otimizados pra mobile. Layout clássico PS1.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">04</div>
+      <h3>KEY MAPPING</h3>
+      <p>Reconfigura cada botão PS1 pra tecla que tu quiser. Salva teu perfil e usa em qualquer sessão.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">05</div>
+      <h3>MEMORY CARDS</h3>
+      <p>2 memory cards virtuais de 128KB cada, persistidos no IndexedDB. Como no PS1 original.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">06</div>
+      <h3>DISC SWAP</h3>
+      <p>Suporte a jogos multi-CD (MGS, FF7, RE2). Troca de disco na hora sem perder o save.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">07</div>
+      <h3>CHEATS</h3>
+      <p>Game Shark nativo. Liga/desliga cada código na hora, sem restart.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">08</div>
+      <h3>HLE (SEM BIOS)</h3>
+      <p>Roda SEM BIOS graças ao HLE do PCSX-ReARMed. Sem complicação, sem arquivo extra pra baixar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== HOW TO ============== -->
+<section class="howto-section">
+  <div class="howto-wrap">
+    <div>
+      <h2 class="section-title"><span class="tag">COMO JOGAR</span>3 PASSOS</h2>
+      <p class="section-sub" style="color:rgba(0,0,0,.7);margin-bottom:24px">Bora começar. É mais fácil do que parece.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-n">1</div>
+          <div class="step-content">
+            <h4>CARREGA A ROM</h4>
+            <p>Arrasta um arquivo .bin/.cue/.img/.pbp pra tela ou clica em "Carregar ROM". A ROM vai pro teu acervo.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-n">2</div>
+          <div class="step-content">
+            <h4>APELTA PLAY</h4>
+            <p>O emulador boota direto via HLE (sem BIOS). No mobile os controles touch aparecem automáticos. No desktop usa teclado.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-n">3</div>
+          <div class="step-content">
+            <h4>BORA JOGAR</h4>
+            <p>Salva teu progresso com F5, faz quick save com S, ativa turbo com 2/3/4. Boa diversão.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-family:var(--font-display);font-size:18px;margin-bottom:14px;letter-spacing:1px">⌨ TECLADO PADRÃO</h3>
+      <div class="kbd-grid" id="kbdGrid"></div>
+      <p style="margin-top:16px;font-size:12px;opacity:.7">Personaliza no menu <b>AJUSTES → KEY MAP</b>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer class="footer">
+  <div class="footer-wrap">
+    <div class="footer-brand">
+      <div class="logo">
+        <div class="logo-badge">PBL</div>
+        <span>PBL · PLAY ULTIMATE</span>
+      </div>
+      <p>Super simulador de PlayStation 1 construído com PCSX-ReARMed WASM (via EmulatorJS). Visual neo-brutalista, performance em primeiro lugar, zero coleta de dados. Roda em qualquer browser moderno.</p>
+      <p style="font-size:11px;opacity:.5;font-family:var(--font-mono)">v1.0.0 · 2026 EDITION</p>
+    </div>
+    <div>
+      <h4>NAVEGAÇÃO</h4>
+      <ul>
+        <li><a href="#console">Console</a></li>
+        <li><a href="#library">Biblioteca</a></li>
+        <li><a href="#" onclick="openSettings();return false">Ajustes</a></li>
+        <li><a href="#" onclick="openKeymap();return false">Key Map</a></li>
+        <li><a href="#" onclick="openSaveStates();return false">Save States</a></li>
+        <li><a href="#" onclick="openCheats();return false">Cheats</a></li>
+        <li><a href="#" onclick="openDiscs();return false">Disc Swap</a></li>
+        <li><a href="#" onclick="openMemoryCards();return false">Memory Cards</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>LEGAL</h4>
+      <ul>
+        <li>Use apenas ROMs que tu tens original</li>
+        <li>Não hospedamos ROMs</li>
+        <li>PCSX-ReARMed © notaz (GPLv2)</li>
+        <li>EmulatorJS © EmulatorJS team (MIT)</li>
+        <li>Feito no Brasil · 2026</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>// PBL · PLAY ULTIMATE</span>
+    <span>BOTA O JOGO PRA RODAR ★ 32 BITS FOREVER</span>
+  </div>
+</footer>
+
+<!-- ============== MODALS ============== -->
+<div class="modal-overlay" id="modalSaveStates">
+  <div class="modal">
+    <div class="modal-head cyan">
+      <h2>💾 SAVE STATES</h2>
+      <button class="modal-close" onclick="closeModal('modalSaveStates')">×</button>
+    </div>
+    <div class="modal-body" id="saveSlotsBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalKeymap">
+  <div class="modal">
+    <div class="modal-head yellow">
+      <h2>⌨ KEY MAPPING</h2>
+      <button class="modal-close" onclick="closeModal('modalKeymap')">×</button>
+    </div>
+    <div class="modal-body" id="keymapBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalSettings">
+  <div class="modal">
+    <div class="modal-head dark">
+      <h2>⚙ AJUSTES</h2>
+      <button class="modal-close" onclick="closeModal('modalSettings')">×</button>
+    </div>
+    <div class="modal-body" id="settingsBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCheats">
+  <div class="modal">
+    <div class="modal-head magenta">
+      <h2>🎮 CHEATS (GAME SHARK)</h2>
+      <button class="modal-close" onclick="closeModal('modalCheats')">×</button>
+    </div>
+    <div class="modal-body" id="cheatsBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalDiscs">
+  <div class="modal">
+    <div class="modal-head cyan">
+      <h2>💿 DISC SWAP</h2>
+      <button class="modal-close" onclick="closeModal('modalDiscs')">×</button>
+    </div>
+    <div class="modal-body" id="discsBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalMemoryCards">
+  <div class="modal">
+    <div class="modal-head yellow">
+      <h2>💾 MEMORY CARDS</h2>
+      <button class="modal-close" onclick="closeModal('modalMemoryCards')">×</button>
+    </div>
+    <div class="modal-body" id="memoryCardsBody"></div>
+  </div>
+</div>
+
+<!-- ============== TOAST + DRAG ============== -->
+<div class="toast-container" id="toastContainer"></div>
+<div class="drag-overlay" id="dragOverlay">
+  <div class="msg">
+    <div class="icon">▼</div>
+    <div>SOLTA A ROM AQUI</div>
+    <div style="font-size:13px;opacity:.7;margin-top:8px;font-family:var(--font-mono)">.bin · .cue · .img · .pbp · .zip</div>
+  </div>
+</div>
+
+<div class="orientation-hint" id="orientationHint">
+  <div class="icon">📱</div>
+  <h2>GIRA O CELULAR</h2>
+  <p>PBL fica melhor em paisagem. Vira o aparelho pra jogar.</p>
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="romInput" accept=".bin,.cue,.img,.pbp,.zip,.iso,.ecm,application/octet-stream" style="display:none" multiple>
+
+<!-- ============== EmulatorJS LOADER (PCSX-ReARMed for PS1) ============== -->
+<!-- loader.js is loaded dynamically after the user picks a ROM, so we can
+     configure window.EJS_* variables BEFORE the auto-init runs. -->
+<script>
+// We'll inject the loader.js script tag from app logic (startEmulatorJS).
+// Just configure the path here so we can find it later.
+window.PBL_EJS_LOADER_URL = "https://cdn.jsdelivr.net/npm/@emulatorjs/emulatorjs@4.2.3/data/loader.js";
+window.PBL_EJS_PATH = "https://cdn.jsdelivr.net/npm/@emulatorjs/emulatorjs@4.2.3/data/";
+window.EJS_threads = false;
+window.EJS_disableDatabases = true;
+window.EJS_DEBUG_XX = false;
+</script>
+
+<!-- ============== APP LOGIC ============== -->
+<script>
+'use strict';
+
+/* ============================================================
+   PBL · PLAY ULTIMATE
+   App logic — EmulatorJS (PCSX-ReARMed) wrapper with custom UI
+   ============================================================ */
+
+// ----- Constants -----
+// PS1 controller button IDs (per EmulatorJS simulate_input convention):
+// 0=Up, 1=Right(? actually... check below), 2=Down, 3=Left
+// 4=Select, 5=Start, 6=Square, 7=Triangle, 8=Cross, 9=Circle
+// 10=L1, 11=R1, 12=L2, 13=R2
+// 14=AnalogX-Left, 15=AnalogY-Left, 16=AnalogX-Right, 17=AnalogY-Right
+// 18=Mode (analog toggle)
+//
+// But EmulatorJS uses RetroArch button mapping (libretro):
+// 0=Up, 1=Down, 2=Left, 3=Right, 4=Select, 5=Start
+// 6=Triangle?... actually different. We'll use this PS1 libretro mapping:
+// 0=Up, 1=Down, 2=Left, 3=Right, 4=Select, 5=Start
+// 6=Triangle, 7=Circle, 8=Cross, 9=Square
+// 10=L1, 11=R1, 12=L2, 13=R2
+// 14=L3 (analog push), 15=R3 (analog push)
+// 16=Analog-X-left(- to +), 17=Analog-Y-left, 18=Analog-X-right, 19=Analog-Y-right
+// Actually for PS1 in libretro/pcsx_rearmed:
+// Player 1 digital:
+// 0 = Cross (B), 1 = Circle (A), 2 = Square (Y), 3 = Triangle (X)
+// 4 = Start, 5 = Select, 6 = L1, 7 = R1, 8 = L2, 9 = R2, 10 = L3, 11 = R3
+// 12 = D-Pad Up, 13 = D-Pad Down, 14 = D-Pad Left, 15 = D-Pad Right
+// 16+ = analog axes
+// We use this RetroPad layout that maps to PS1.
+
+const PSX_BUTTONS = [
+  // libretro IDs for PS1 in EmulatorJS
+  {id:12, name:'▲ UP',    bit:12, key:'ArrowUp'},
+  {id:13, name:'▼ DOWN',  bit:13, key:'ArrowDown'},
+  {id:14, name:'◀ LEFT',  bit:14, key:'ArrowLeft'},
+  {id:15, name:'▶ RIGHT', bit:15, key:'ArrowRight'},
+  {id:4,  name:'SELECT',  bit:4,  key:'Shift'},
+  {id:5,  name:'START',   bit:5,  key:'Enter'},
+  {id:3,  name:'△ TRI',   bit:3,  key:'W'},
+  {id:1,  name:'○ CIR',   bit:1,  key:'D'},
+  {id:0,  name:'× CRO',   bit:0,  key:'S'},
+  {id:2,  name:'□ SQU',   bit:2,  key:'A'},
+  {id:6,  name:'L1',      bit:6,  key:'Q'},
+  {id:7,  name:'R1',      bit:7,  key:'E'},
+  {id:8,  name:'L2',      bit:8,  key:'1'},
+  {id:9,  name:'R2',      bit:9,  key:'3'},
+];
+
+// Touch button mapping (uses HTML data-key attributes)
+// We map touch buttons to libretro IDs directly (no bit manipulation needed
+// because EmulatorJS simulate_input takes (port, button, value))
+const TOUCH_KEYS = {
+  // D-pad
+  1: 12,  // ▲ -> UP
+  2: 13,  // ▼ -> DOWN
+  3: 14,  // ◀ -> LEFT
+  4: 15,  // ▶ -> RIGHT
+  // Select/Start
+  8: 4,   // SELECT
+  9: 5,   // START
+  // △○×□
+  12: 3,  // △ TRIANGLE
+  13: 1,  // ○ CIRCLE
+  14: 0,  // × CROSS
+  15: 2,  // □ SQUARE
+  // Shoulders
+  17: 8,  // L2
+  18: 9,  // R2
+  19: 6,  // L1
+  20: 7,  // R1
+};
+
+// ----- State -----
+const APP = {
+  ejs: null,                 // EmulatorJS instance
+  ejsReady: false,
+  currentRom: null,          // {id, name, size, addedAt, data, discs?}
+  currentRomData: null,
+  isPlaying: false,
+  isMuted: false,
+  volume: 0.8,
+  speed: 1,
+  fps: 0,
+  fpsCounter: 0,
+  fpsTimer: 0,
+  lastFrame: 0,
+  currentDisk: 0,
+  discCount: 1,
+  currentMemCard: 1,
+  keyMap: {},                // bit -> keyboard key
+  reverseKeyMap: {},         // normalized keyboard key -> bit
+  cheats: [],                // [{code, desc, enabled}]
+  settings: {
+    autoSave: true,
+    autoSaveInterval: 30,
+    showFps: true,
+    filter: 'pixelated',
+    touchControls: 'auto',
+    preferLandscape: true,
+  },
+  pressedButtons: new Set(),  // currently pressed libretro IDs
+  analogX: 0,                 // -32768 to 32767
+  analogY: 0,
+  rafId: null,
+};
+
+const DB_NAME = 'pbl_db';
+const DB_VERSION = 1;
+const STORE_ROMS = 'roms';
+const STORE_SAVES = 'saves';        // state snapshots
+const STORE_SETTINGS = 'settings';
+const STORE_MEMCARDS = 'memcards';  // memory card data
+
+// ----- DOM refs -----
+const $ = (s) => document.querySelector(s);
+
+/* ============================================================
+   INDEXEDDB
+   ============================================================ */
+let _db = null;
+function dbOpen() {
+  return new Promise((resolve, reject) => {
+    if (_db) return resolve(_db);
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_ROMS)) {
+        const s = db.createObjectStore(STORE_ROMS, {keyPath:'id'});
+        s.createIndex('name', 'name', {unique:false});
+      }
+      if (!db.objectStoreNames.contains(STORE_SAVES)) {
+        const s = db.createObjectStore(STORE_SAVES, {keyPath:'id'});
+        s.createIndex('romId', 'romId', {unique:false});
+      }
+      if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+        db.createObjectStore(STORE_SETTINGS, {keyPath:'key'});
+      }
+      if (!db.objectStoreNames.contains(STORE_MEMCARDS)) {
+        db.createObjectStore(STORE_MEMCARDS, {keyPath:'id'});
+      }
+    };
+    req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbPut(store, value) {
+  return dbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).put(value);
+    tx.oncomplete = () => res(true);
+    tx.onerror = () => rej(tx.error);
+  }));
+}
+function dbGet(store, key) {
+  return dbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readonly');
+    const r = tx.objectStore(store).get(key);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }));
+}
+function dbGetAll(store, indexName, indexValue) {
+  return dbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readonly');
+    let req;
+    if (indexName && indexValue !== undefined) {
+      req = tx.objectStore(store).index(indexName).getAll(indexValue);
+    } else {
+      req = tx.objectStore(store).getAll();
+    }
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  }));
+}
+function dbDelete(store, key) {
+  return dbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).delete(key);
+    tx.oncomplete = () => res(true);
+    tx.onerror = () => rej(tx.error);
+  }));
+}
+
+async function persistKeyMap() {
+  await dbPut(STORE_SETTINGS, {key:'keyMap', value: APP.keyMap});
+}
+async function persistSettings() {
+  await dbPut(STORE_SETTINGS, {key:'settings', value: APP.settings});
+}
+async function loadPersisted() {
+  try {
+    const km = await dbGet(STORE_SETTINGS, 'keyMap');
+    if (km && km.value) {
+      APP.keyMap = km.value;
+    } else {
+      APP.keyMap = {};
+      PSX_BUTTONS.forEach(b => { APP.keyMap[b.bit] = b.key; });
+    }
+    const st = await dbGet(STORE_SETTINGS, 'settings');
+    if (st && st.value) Object.assign(APP.settings, st.value);
+    const ch = await dbGet(STORE_SETTINGS, 'cheats');
+    if (ch && ch.value) APP.cheats = ch.value;
+  } catch(e) { console.warn('loadPersisted failed', e); }
+  rebuildReverseKeyMap();
+}
+function rebuildReverseKeyMap() {
+  APP.reverseKeyMap = {};
+  for (const [bit, kb] of Object.entries(APP.keyMap)) {
+    APP.reverseKeyMap[normalizeKey(kb)] = parseInt(bit, 10);
+  }
+}
+function normalizeKey(k) {
+  if (!k) return '';
+  return k.toLowerCase();
+}
+
+/* ============================================================
+   MEMORY CARDS
+   ============================================================ */
+async function initMemoryCards() {
+  // Create 2 empty memory cards (128KB each) if they don't exist
+  for (let i = 1; i <= 2; i++) {
+    const id = 'memcard_' + i;
+    const existing = await dbGet(STORE_MEMCARDS, id);
+    if (!existing) {
+      const data = new Uint8Array(128 * 1024); // 128KB
+      // PS1 memcard format: frame 0 = directory (0xFF = free), frame 1..15 = directory continuation,
+      // frames 16..1023 = data blocks. Default state = all 0xFF (unformatted).
+      data.fill(0xFF);
+      // Mark the directory frames as "free" with correct format
+      // Directory frame: 32 entries of 16 bytes each. First byte:
+      // 0xA0 = free, 0x51 = used, 0x52 = used (link), 0x53 = used (end), 0xFF = corrupt
+      // We'll leave 0xFF (unformatted) — emulator will format on first use if needed.
+      await dbPut(STORE_MEMCARDS, {
+        id,
+        slot: i,
+        size: data.length,
+        createdAt: Date.now(),
+        data: data.buffer
+      });
+    }
+  }
+}
+
+async function getMemoryCard(slot) {
+  return await dbGet(STORE_MEMCARDS, 'memcard_' + slot);
+}
+
+async function saveMemoryCard(slot, data) {
+  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  await dbPut(STORE_MEMCARDS, {
+    id: 'memcard_' + slot,
+    slot: slot,
+    size: u8.length,
+    createdAt: Date.now(),
+    data: u8.buffer
+  });
+}
+
+async function exportMemoryCard(slot) {
+  const mc = await getMemoryCard(slot);
+  if (!mc) { toast('Memory card ' + slot + ' vazio', 'error'); return; }
+  const blob = new Blob([mc.data], {type: 'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'memcard' + slot + '.mcd';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Memory card ' + slot + ' exportado', 'success');
+}
+
+async function importMemoryCard(slot, file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const data = new Uint8Array(buf);
+    if (data.length !== 128 * 1024 && data.length !== 0x20040) {
+      // 0x20040 = 128KB + 64 byte header (some formats)
+      if (data.length < 128 * 1024) {
+        toast('Arquivo muito pequeno — memcard inválido', 'error');
+        return;
+      }
+    }
+    await saveMemoryCard(slot, data);
+    toast('Memory card ' + slot + ' importado!', 'success');
+    if (document.getElementById('modalMemoryCards').classList.contains('visible')) {
+      renderMemoryCards();
+    }
+  } catch (e) {
+    toast('Erro ao importar: ' + e.message, 'error');
+  }
+}
+
+async function clearMemoryCard(slot) {
+  if (!confirm('Apagar memory card ' + slot + '? Todos os saves serão perdidos.')) return;
+  const data = new Uint8Array(128 * 1024);
+  data.fill(0xFF);
+  await saveMemoryCard(slot, data);
+  toast('Memory card ' + slot + ' formatado', 'info');
+  renderMemoryCards();
+}
+
+/* ============================================================
+   ROM MANAGEMENT
+   ============================================================ */
+function triggerRomUpload() {
+  $('#romInput').click();
+}
+$('#romInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  if (files.length > 0) {
+    await handleRomFile(files[0], files.slice(1));
+  }
+  e.target.value = '';
+});
+
+async function handleRomFile(file, extraDiscs = []) {
+  if (!file) return;
+  const name = file.name;
+  const ext = name.split('.').pop().toLowerCase();
+  if (!['bin','cue','img','pbp','zip','iso','ecm'].includes(ext)) {
+    toast('Formato não suportado: .' + ext, 'error');
+    return;
+  }
+  toast('Carregando ' + name + '...', 'info');
+  try {
+    let romData = await file.arrayBuffer();
+    let discDataList = [romData];
+    let cueFile = null;
+
+    if (ext === 'zip') {
+      const extracted = await extractRomFromZip(romData);
+      if (!extracted) {
+        toast('Nenhum .bin/.cue/.img dentro do ZIP', 'error');
+        return;
+      }
+      discDataList = extracted.data;
+      cueFile = extracted.cue;
+    } else if (ext === 'cue') {
+      // CUE file - need to find the .bin file
+      cueFile = romData;
+      // Try to find .bin file with same name in extraDiscs
+      const baseName = name.replace(/\.cue$/i, '');
+      const binFile = extraDiscs.find(f => f.name.toLowerCase().startsWith(baseName.toLowerCase()) && f.name.toLowerCase().endsWith('.bin'));
+      if (binFile) {
+        discDataList = [await binFile.arrayBuffer()];
+      } else {
+        toast('CUE precisa do arquivo .bin correspondente', 'error');
+        return;
+      }
+    }
+
+    // Process extra discs (multi-CD games)
+    for (const f of extraDiscs) {
+      const fext = f.name.split('.').pop().toLowerCase();
+      if (['bin','img','iso','pbp'].includes(fext)) {
+        discDataList.push(await f.arrayBuffer());
+      }
+    }
+
+    const id = 'rom_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    const title = name.replace(/\.[^.]+$/, '');
+    const totalSize = discDataList.reduce((a, b) => a + b.byteLength, 0);
+    const rom = {
+      id, name: title, filename: name,
+      size: totalSize, addedAt: Date.now(),
+      data: discDataList[0],           // primary disc
+      discs: discDataList,             // all discs
+      discCount: discDataList.length,
+      cueFile: cueFile,
+    };
+    await dbPut(STORE_ROMS, rom);
+    toast('ROM salva na biblioteca!' + (discDataList.length > 1 ? ' (' + discDataList.length + ' discos)' : ''), 'success');
+    await renderLibrary();
+    await loadRom(rom);
+  } catch (err) {
+    console.error(err);
+    toast('Erro ao carregar ROM: ' + err.message, 'error');
+  }
+}
+
+async function extractRomFromZip(buf) {
+  if (!window.fflate) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      const u8 = new Uint8Array(buf);
+      const unzipped = window.fflate.unzipSync(u8);
+      const dataFiles = [];
+      let cueFile = null;
+      for (const [fname, data] of Object.entries(unzipped)) {
+        const lower = fname.toLowerCase();
+        if (lower.endsWith('.cue')) {
+          cueFile = data.buffer;
+        } else if (lower.endsWith('.bin') || lower.endsWith('.img') || lower.endsWith('.iso') || lower.endsWith('.pbp')) {
+          dataFiles.push(data.buffer);
+        }
+      }
+      if (dataFiles.length === 0) {
+        resolve(null);
+        return;
+      }
+      resolve({ data: dataFiles, cue: cueFile });
+    } catch (e) { reject(e); }
+  });
+}
+
+async function loadRom(rom) {
+  APP.currentRom = rom;
+  APP.currentRomData = rom.data;
+  APP.discCount = rom.discCount || 1;
+  APP.currentDisk = 0;
+  // Hide overlay
+  $('#screenOverlay').classList.add('hidden');
+  // HUD
+  $('#hud-rom').textContent = rom.name.slice(0, 14).toUpperCase();
+
+  // Boot EmulatorJS with this ROM
+  await startEmulatorJS(rom);
+}
+
+async function startEmulatorJS(rom) {
+  // Create blob URL for the ROM
+  const romBlob = new Blob([rom.data], {type: 'application/octet-stream'});
+  const romUrl = URL.createObjectURL(romBlob);
+
+  // Tear down previous EJS instance if exists
+  if (window.EJS_emulator) {
+    try { window.EJS_emulator.callEvent('exit'); } catch {}
+    try { window.EJS_emulator = null; } catch {}
+    APP.ejs = null;
+    APP.ejsReady = false;
+  }
+  // Clear container
+  const container = document.getElementById('ejs-container');
+  container.innerHTML = '';
+
+  // Configure EJS for this ROM — these window.EJS_* vars are read by loader.js
+  // when it auto-initializes window.EJS_emulator.
+  window.EJS_player = '#ejs-container';
+  window.EJS_gameUrl = romUrl;
+  window.EJS_gameName = rom.name.replace(/[^a-zA-Z0-9]/g, '_');
+  // EJS_core must be the GENERIC system name ('psx'), not the specific core ('pcsx_rearmed').
+  // EmulatorJS's getCores() maps 'psx' -> ['pcsx_rearmed', 'mednafen_psx_hw'] and uses the first.
+  window.EJS_core = 'psx';
+  window.EJS_biosUrl = '';          // HLE - no BIOS
+  window.EJS_startOnLoaded = true;
+  window.EJS_color = '#FF6B35';
+  window.EJS_backgroundColor = '#000000';
+  window.EJS_alignStartButton = 'bottom';
+  window.EJS_startButtonName = 'BORA JOGAR';
+  window.EJS_disableCue = false;
+  window.EJS_disableDatabases = true;
+  window.EJS_threads = false;        // no SharedArrayBuffer without COOP/COEP
+  window.EJS_DEBUG_XX = false;
+  window.EJS_volume = APP.volume;
+  window.EJS_pathtodata = window.PBL_EJS_PATH;
+
+  // Map core filenames to the separate @emulatorjs/core-pcsx_rearmed package
+  // on jsdelivr, since the cores/ subfolder doesn't exist in @emulatorjs/emulatorjs.
+  // EJS_paths is read by downloadFile() and overrides the URL for matching filenames.
+  // The core filename is: getCore() + (threads?"-thread":"") + legacy + "-wasm.data"
+  // For pcsx_rearmed + no-threads + legacy (no webgl2 in some browsers): "pcsx_rearmed-legacy-wasm.data"
+  window.EJS_paths = {
+    'pcsx_rearmed-wasm.data': 'https://cdn.jsdelivr.net/npm/@emulatorjs/core-pcsx_rearmed@4.2.3/pcsx_rearmed-wasm.data',
+    'pcsx_rearmed-legacy-wasm.data': 'https://cdn.jsdelivr.net/npm/@emulatorjs/core-pcsx_rearmed@4.2.3/pcsx_rearmed-legacy-wasm.data',
+    'pcsx_rearmed-thread-wasm.data': 'https://cdn.jsdelivr.net/npm/@emulatorjs/core-pcsx_rearmed@4.2.3/pcsx_rearmed-thread-wasm.data',
+    'pcsx_rearmed-thread-legacy-wasm.data': 'https://cdn.jsdelivr.net/npm/@emulatorjs/core-pcsx_rearmed@4.2.3/pcsx_rearmed-thread-legacy-wasm.data',
+  };
+
+  // Default controllers (PS1 libretro mapping)
+  window.EJS_defaultControls = {
+    0: {
+      0: 'Cross', 1: 'Circle', 2: 'Square', 3: 'Triangle',
+      4: 'Select', 5: 'Start',
+      6: 'L1', 7: 'R1', 8: 'L2', 9: 'R2',
+      10: 'L3', 11: 'R3',
+      12: 'Up', 13: 'Down', 14: 'Left', 15: 'Right',
+      16: 'Analog Left X', 17: 'Analog Left Y',
+      18: 'Analog Right X', 19: 'Analog Right Y',
+    }
+  };
+
+  // Set up callbacks BEFORE the loader auto-inits
+  window.EJS_onGameStart = () => {
+    APP.ejsReady = true;
+    APP.ejs = window.EJS_emulator;
+    APP.isPlaying = true;
+    updateHud();
+    toast('GAME ON · ' + rom.name, 'success');
+    setTimeout(() => applyCheats(), 500);
+    tryAutoLoadSave();
+  };
+  window.EJS_ready = () => {
+    APP.ejs = window.EJS_emulator;
+    APP.ejsReady = true;
+    // Force HLE BIOS mode (no BIOS file required)
+    setTimeout(() => {
+      try {
+        if (APP.ejs.gameManager && APP.ejs.gameManager.functions.setVariable) {
+          APP.ejs.gameManager.functions.setVariable('pcsx_rearmed_bios', 'HLE');
+          console.log('[PBL] Set pcsx_rearmed_bios = HLE');
+        }
+      } catch(e) { console.warn('setVariable HLE failed', e); }
+    }, 500);
+  };
+
+  // If loader.js already ran (we have a previous EJS_emulator that's null now),
+  // we need to reload the page to re-init. For the first ROM load, just inject
+  // the loader script — it will auto-init using the vars we just set.
+  if (APP.ejsLoaderLoaded) {
+    // Loader already ran once — re-run it by injecting again (it'll re-init EJS_emulator)
+    // Note: this is a limitation of EmulatorJS — cleanest fix is page reload.
+    toast('Reinicializando emulador...', 'info');
+    setTimeout(() => location.reload(), 800);
+    return;
+  }
+
+  APP.ejsLoaderLoaded = true;
+  // Inject loader.js — it will load all EJS scripts (emulator.js, GameManager.js, etc.)
+  // but the loader's auto-init seems unreliable when injected dynamically.
+  // So we'll wait for the EmulatorJS class to be available, then instantiate manually.
+  const script = document.createElement('script');
+  script.src = window.PBL_EJS_LOADER_URL;
+  script.async = true;
+  script.onload = () => {
+    // Loader.js finished loading. Wait for EmulatorJS class to be defined.
+    const checkClass = setInterval(() => {
+      if (typeof EmulatorJS === 'function') {
+        clearInterval(checkClass);
+        // Instantiate manually (the loader's auto-init may have skipped due to
+        // timing — EmulatorJS class is loaded but EJS_emulator wasn't created)
+        if (!window.EJS_emulator) {
+          try {
+            window.EJS_emulator = new EmulatorJS(window.EJS_player, {
+              gameUrl: window.EJS_gameUrl,
+              gameName: window.EJS_gameName,
+              system: window.EJS_core,        // 'psx' — generic system name
+              biosUrl: '',
+              startOnLoad: true,
+              color: window.EJS_color,
+              backgroundColor: window.EJS_backgroundColor,
+              alignStartButton: window.EJS_alignStartButton,
+              startBtnName: window.EJS_startButtonName,
+              disableCue: window.EJS_disableCue,
+              disableDatabases: window.EJS_disableDatabases,
+              threads: window.EJS_threads,
+              volume: window.EJS_volume,
+              dataPath: window.EJS_pathtodata,
+              filePaths: window.EJS_paths,
+              // defaultControllers omitted — use EmulatorJS defaults
+              // (we'll override keyboard mapping via our own keydown handler)
+            });
+            APP.ejs = window.EJS_emulator;
+            // Set up event callbacks
+            window.EJS_emulator.on('start', () => {
+              APP.ejsReady = true;
+              APP.isPlaying = true;
+              updateHud();
+              toast('GAME ON · ' + rom.name, 'success');
+              setTimeout(() => applyCheats(), 500);
+              tryAutoLoadSave();
+            });
+            window.EJS_emulator.on('exit', () => {
+              APP.isPlaying = false;
+              updateHud();
+            });
+          } catch (e) {
+            console.error('EJS init failed', e);
+            toast('Erro ao iniciar emulador: ' + e.message, 'error');
+          }
+        }
+      }
+    }, 100);
+  };
+  script.onerror = (e) => {
+    console.error('Failed to load EmulatorJS', e);
+    toast('Erro ao carregar núcleo — verifica tua conexão', 'error');
+  };
+  document.head.appendChild(script);
+  toast('Carregando núcleo PCSX-ReARMed...', 'info', 4000);
+}
+
+async function tryAutoLoadSave() {
+  if (!APP.currentRom) return;
+  try {
+    const save = await dbGet(STORE_SAVES, APP.currentRom.id + '_state_0');
+    if (save && APP.ejs && APP.ejs.gameManager) {
+      // Don't auto-load — just notify user
+      setTimeout(() => toast('Save state disponível — aperta L pra carregar', 'info'), 800);
+    }
+  } catch {}
+}
+
+async function deleteRom(id) {
+  if (!confirm('Apagar esta ROM e todos os saves dela?')) return;
+  await dbDelete(STORE_ROMS, id);
+  const saves = await dbGetAll(STORE_SAVES, 'romId', id);
+  for (const s of saves) await dbDelete(STORE_SAVES, s.id);
+  if (APP.currentRom && APP.currentRom.id === id) {
+    if (APP.ejs) {
+      try { APP.ejs.callEvent('exit'); } catch {}
+    }
+    APP.currentRom = null;
+    APP.currentRomData = null;
+    APP.isPlaying = false;
+    $('#screenOverlay').classList.remove('hidden');
+    $('#hud-rom').textContent = 'NENHUMA';
+    document.getElementById('ejs-container').innerHTML = '';
+  }
+  toast('ROM removida', 'info');
+  await renderLibrary();
+}
+
+/* ============================================================
+   LIBRARY UI
+   ============================================================ */
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + 'B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + 'KB';
+  if (bytes < 1024*1024*1024) return (bytes/(1024*1024)).toFixed(1) + 'MB';
+  return (bytes/(1024*1024*1024)).toFixed(2) + 'GB';
+}
+function formatDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) + ' ' +
+         d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+async function renderLibrary() {
+  const grid = $('#libGrid');
+  const empty = $('#libEmpty');
+  const roms = await dbGetAll(STORE_ROMS);
+  roms.sort((a,b) => b.addedAt - a.addedAt);
+  if (roms.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = roms.map(r => {
+    const isPlaying = APP.currentRom && APP.currentRom.id === r.id;
+    const discInfo = r.discCount > 1 ? ' · ' + r.discCount + ' CDs' : '';
+    return `
+      <div class="lib-card ${isPlaying?'playing':''}" onclick="loadRomById('${r.id}')">
+        <div class="lib-thumb">
+          <div class="placeholder">${escapeHtml(r.name.slice(0,12).toUpperCase())}</div>
+          <div class="play-icon">▶</div>
+        </div>
+        <div class="lib-info">
+          <div class="lib-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</div>
+          <div class="lib-meta"><span>${formatSize(r.size)}</span><span>${formatDate(r.addedAt)}${discInfo}</span></div>
+        </div>
+        <div class="lib-actions">
+          <button class="lib-action" onclick="event.stopPropagation();loadRomById('${r.id}')">${isPlaying?'JOGANDO':'JOGAR'}</button>
+          <button class="lib-action danger" onclick="event.stopPropagation();deleteRom('${r.id}')">X</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function loadRomById(id) {
+  const rom = await dbGet(STORE_ROMS, id);
+  if (!rom) { toast('ROM não encontrada', 'error'); return; }
+  await loadRom(rom);
+  await renderLibrary();
+  document.getElementById('console').scrollIntoView({behavior:'smooth'});
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
+
+/* ============================================================
+   PLAYBACK CONTROL
+   ============================================================ */
+function togglePlay() {
+  if (!APP.ejsReady || !APP.currentRom) {
+    toast('Carrega uma ROM primeiro!', 'info');
+    return;
+  }
+  try {
+    if (APP.isPlaying) {
+      APP.ejs.pause();
+      APP.isPlaying = false;
+    } else {
+      APP.ejs.play();
+      APP.isPlaying = true;
+    }
+    updateHud();
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+}
+
+function restartGame() {
+  if (!APP.ejsReady || !APP.currentRom) return;
+  if (!confirm('Reiniciar o jogo? Tu vais perder o progresso não salvo.')) return;
+  try {
+    if (APP.ejs.gameManager) {
+      APP.ejs.gameManager.functions.restart();
+    }
+    toast('Jogo reiniciado', 'info');
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+}
+
+function setSpeed(s) {
+  APP.speed = s;
+  $('#hud-speed').textContent = s + 'x';
+  document.querySelectorAll('.hud-btn[data-speed]').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.speed,10) === s);
+  });
+  // Apply to EJS via fast-forward
+  if (APP.ejsReady && APP.ejs.gameManager) {
+    try {
+      if (s > 1) {
+        APP.ejs.gameManager.functions.toggleFastForward(1);
+        APP.ejs.gameManager.functions.setFastForwardRatio(s);
+      } else {
+        APP.ejs.gameManager.functions.toggleFastForward(0);
+      }
+    } catch (e) { console.warn('setSpeed', e); }
+  }
+  toast('Velocidade: ' + s + 'x', 'info');
+}
+
+function updateHud() {
+  $('#hud-status').textContent = APP.isPlaying ? 'JOGANDO' : 'PAUSADO';
+  $('#btnPlay').classList.toggle('active', APP.isPlaying);
+  $('#btnPause').classList.toggle('active', !APP.isPlaying);
+}
+
+/* ============================================================
+   AUDIO
+   ============================================================ */
+function toggleMute() {
+  APP.isMuted = !APP.isMuted;
+  const btn = $('#btnMute');
+  btn.querySelector('span:first-child').textContent = APP.isMuted ? '🔇 MUTED' : '♪ MUTE';
+  btn.classList.toggle('active', APP.isMuted);
+  if (APP.ejsReady && APP.ejs) {
+    try {
+      APP.ejs.volume(APP.isMuted ? 0 : APP.volume);
+    } catch {}
+  }
+  toast(APP.isMuted ? 'Áudio mutado' : 'Áudio ligado', 'info');
+}
+
+$('#volumeSlider').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value, 10);
+  APP.volume = v / 100;
+  $('#volumeVal').textContent = v + '%';
+  if (APP.ejsReady && APP.ejs) {
+    try { APP.ejs.volume(APP.volume); } catch {}
+  }
+  clearTimeout(APP._volTimer);
+  APP._volTimer = setTimeout(() => {
+    localStorage.setItem('pbl_volume', String(APP.volume));
+  }, 300);
+});
+
+/* ============================================================
+   SAVE STATES (via EmulatorJS)
+   ============================================================ */
+async function saveState(slot) {
+  if (!APP.ejsReady || !APP.currentRom) {
+    toast('Carrega uma ROM primeiro!', 'info');
+    return;
+  }
+  try {
+    if (!APP.ejs.gameManager) { toast('Emulador não pronto', 'error'); return; }
+    // EmulatorJS saveState writes to FS as "game.state"
+    APP.ejs.gameManager.functions.saveStateInfo();
+    // Read state info: returns "size|path" or just "path"
+    const info = APP.ejs.gameManager.functions.saveStateInfo();
+    const parts = info.split('|');
+    const statePath = parts.length > 1 ? parts[1] : parts[0];
+    const stateSize = parts.length > 1 ? parseInt(parts[0], 10) : 0;
+    if (!statePath) { toast('Erro ao salvar estado', 'error'); return; }
+    // Read the file from FS
+    let stateData;
+    try {
+      stateData = APP.ejs.gameManager.FS.readFile(statePath);
+    } catch (e) {
+      // Try fallback paths
+      try { stateData = APP.ejs.gameManager.FS.readFile('/' + statePath); }
+      catch { try { stateData = APP.ejs.gameManager.FS.readFile('game.state'); } catch { throw e; } }
+    }
+    const copy = new Uint8Array(stateData);
+    const saveId = APP.currentRom.id + '_state_' + slot;
+    await dbPut(STORE_SAVES, {
+      id: saveId,
+      romId: APP.currentRom.id,
+      romName: APP.currentRom.name,
+      slot: slot,
+      size: copy.byteLength,
+      savedAt: Date.now(),
+      data: copy.buffer,
+      kind: 'state'
+    });
+    toast('Slot ' + slot + ' salvo!', 'success');
+    if (document.getElementById('modalSaveStates').classList.contains('visible')) {
+      renderSaveSlots();
+    }
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao salvar: ' + e.message, 'error');
+  }
+}
+
+async function loadState(slot) {
+  if (!APP.ejsReady || !APP.currentRom) return;
+  const saveId = APP.currentRom.id + '_state_' + slot;
+  const save = await dbGet(STORE_SAVES, saveId);
+  if (!save) {
+    toast('Slot ' + slot + ' vazio', 'error');
+    return;
+  }
+  try {
+    if (!APP.ejs.gameManager) { toast('Emulador não pronto', 'error'); return; }
+    // Write state to FS, then load it
+    const data = new Uint8Array(save.data);
+    const statePath = 'game.state';
+    APP.ejs.gameManager.FS.writeFile(statePath, data);
+    APP.ejs.gameManager.functions.loadState(statePath, 0);
+    toast('Slot ' + slot + ' carregado!', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao carregar: ' + e.message, 'error');
+  }
+}
+
+async function deleteState(slot) {
+  if (!APP.currentRom) return;
+  const saveId = APP.currentRom.id + '_state_' + slot;
+  await dbDelete(STORE_SAVES, saveId);
+  toast('Slot ' + slot + ' apagado', 'info');
+  renderSaveSlots();
+}
+
+async function quickSave() { await saveState(0); }
+async function quickLoad() { await loadState(0); }
+
+/* ============================================================
+   SAVE STATES MODAL
+   ============================================================ */
+async function openSaveStates() {
+  await renderSaveSlots();
+  openModal('modalSaveStates');
+}
+async function renderSaveSlots() {
+  const body = $('#saveSlotsBody');
+  if (!APP.currentRom) {
+    body.innerHTML = '<p style="text-align:center;padding:24px;opacity:.6">Carrega uma ROM primeiro!</p>';
+    return;
+  }
+  const saves = await dbGetAll(STORE_SAVES, 'romId', APP.currentRom.id);
+  const slotMap = {};
+  for (const s of saves) slotMap[s.slot] = s;
+  let html = `
+    <p style="font-size:12px;opacity:.7;background:var(--yellow);border:2px solid #000;padding:8px 12px;font-weight:600">
+      ROM ATUAL: <b>${escapeHtml(APP.currentRom.name)}</b>
+    </p>`;
+  for (let slot = 0; slot < 5; slot++) {
+    const s = slotMap[slot];
+    const isEmpty = !s;
+    html += `
+      <div class="save-slot ${isEmpty?'empty':''}">
+        <div class="info">
+          <div class="slot-n">SLOT ${slot}${slot===0?' ⚡':''}</div>
+          <div class="slot-meta">${s ? formatDate(s.savedAt) + ' · ' + formatSize(s.size) : '— vazio —'}</div>
+        </div>
+        <div class="save-slot-actions">
+          <button class="slot-btn save" onclick="saveState(${slot})">SALVAR</button>
+          <button class="slot-btn load" onclick="loadState(${slot})" ${isEmpty?'disabled':''}>CARREGAR</button>
+          <button class="slot-btn del" onclick="deleteState(${slot})" ${isEmpty?'disabled':''}>X</button>
+        </div>
+      </div>`;
+  }
+  body.innerHTML = html;
+}
+
+/* ============================================================
+   KEY MAPPING MODAL
+   ============================================================ */
+let _waitingForKey = null;
+function openKeymap() {
+  renderKeymap();
+  openModal('modalKeymap');
+}
+function renderKeymap() {
+  const body = $('#keymapBody');
+  body.innerHTML = `
+    <p style="font-size:12px;opacity:.7">Clica num botão do PS1 e depois aperta a tecla que tu queres mapear. Salva automático.</p>
+    ${PSX_BUTTONS.map(b => `
+      <div class="kbd-map-row">
+        <span class="gba-key">${b.name}</span>
+        <button class="kbd-map-btn" onclick="captureKey(${b.bit})" id="kmap_${b.bit}">${escapeHtml(APP.keyMap[b.bit] || '—')}</button>
+      </div>
+    `).join('')}
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" style="flex:1;justify-content:center" onclick="resetKeyMap()">RESET PADRÃO</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="closeModal('modalKeymap')">FECHAR</button>
+    </div>
+  `;
+}
+function captureKey(bit) {
+  _waitingForKey = bit;
+  for (const b of PSX_BUTTONS) {
+    const el = document.getElementById('kmap_' + b.bit);
+    if (el) {
+      el.textContent = b.bit === bit ? '... APERTE ...' : (APP.keyMap[b.bit] || '—');
+      el.style.background = b.bit === bit ? 'var(--accent)' : 'var(--fg)';
+      el.style.color = b.bit === bit ? '#fff' : 'var(--bg)';
+    }
+  }
+}
+async function resetKeyMap() {
+  APP.keyMap = {};
+  PSX_BUTTONS.forEach(b => { APP.keyMap[b.bit] = b.key; });
+  await persistKeyMap();
+  rebuildReverseKeyMap();
+  renderKeymap();
+  renderKbdGrid();
+  toast('Key map resetado', 'info');
+}
+
+/* ============================================================
+   CHEATS MODAL
+   ============================================================ */
+async function openCheats() {
+  await renderCheats();
+  openModal('modalCheats');
+}
+async function renderCheats() {
+  const body = $('#cheatsBody');
+  const cheats = APP.cheats || [];
+  let html = `
+    <p style="font-size:12px;opacity:.7;background:var(--yellow);border:2px solid #000;padding:8px 12px">
+      <b>GAME SHARK</b> (formato XXXXXXXX YYYY). Adiciona códigos e liga/desliga na hora.
+    </p>
+  `;
+  if (cheats.length === 0) {
+    html += '<p style="text-align:center;padding:24px;opacity:.6">// NENHUM CHEAT — ADICIONA ABAIXO</p>';
+  } else {
+    html += cheats.map((c, i) => `
+      <div class="cheat-row">
+        <div class="row">
+          <button class="cheat-toggle ${c.enabled?'on':''}" onclick="toggleCheat(${i})">${c.enabled?'ON':'OFF'}</button>
+          <input class="cheat-input code" value="${escapeHtml(c.code)}" readonly>
+          <input class="cheat-input desc" value="${escapeHtml(c.desc||'')}" readonly style="flex:2">
+          <button class="cheat-del" onclick="deleteCheat(${i})">X</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  html += `
+    <div style="background:var(--green);border:2px solid #000;padding:12px;display:grid;gap:8px">
+      <input class="cheat-input code" id="newCheatCode" placeholder="XXXXXXXX YYYY" style="text-transform:uppercase">
+      <input class="cheat-input desc" id="newCheatDesc" placeholder="Descrição (opcional)">
+      <button class="btn btn-dark" style="justify-content:center" onclick="addCheat()">+ ADICIONAR CHEAT</button>
+    </div>
+    <p style="font-size:11px;opacity:.6;text-align:center">
+      Cheats só funcionam durante o jogo. Pra remover, desliga e apaga.
+    </p>
+  `;
+  body.innerHTML = html;
+}
+async function addCheat() {
+  const code = document.getElementById('newCheatCode').value.trim().toUpperCase();
+  const desc = document.getElementById('newCheatDesc').value.trim();
+  if (!code) { toast('Digite o código do cheat', 'error'); return; }
+  // Validate Game Shark format: XXXXXXXX YYYY
+  if (!/^[0-9A-F]{8}\s+[0-9A-F]{4}$/.test(code)) {
+    toast('Formato inválido. Use XXXXXXXX YYYY (hex)', 'error', 4000);
+    return;
+  }
+  APP.cheats.push({ code, desc, enabled: true });
+  await dbPut(STORE_SETTINGS, {key:'cheats', value: APP.cheats});
+  applyCheats();
+  toast('Cheat adicionado: ' + code, 'success');
+  renderCheats();
+}
+async function toggleCheat(i) {
+  APP.cheats[i].enabled = !APP.cheats[i].enabled;
+  await dbPut(STORE_SETTINGS, {key:'cheats', value: APP.cheats});
+  applyCheats();
+  renderCheats();
+}
+async function deleteCheat(i) {
+  APP.cheats.splice(i, 1);
+  await dbPut(STORE_SETTINGS, {key:'cheats', value: APP.cheats});
+  applyCheats();
+  renderCheats();
+}
+function applyCheats() {
+  if (!APP.ejsReady || !APP.ejs.gameManager) return;
+  try {
+    APP.ejs.gameManager.functions.resetCheat();
+    let idx = 0;
+    for (const c of APP.cheats) {
+      if (c.enabled) {
+        APP.ejs.gameManager.functions.setCheat(idx++, 1, c.code);
+      }
+    }
+  } catch (e) { console.warn('applyCheats', e); }
+}
+
+/* ============================================================
+   DISC SWAP MODAL
+   ============================================================ */
+async function openDiscs() {
+  await renderDiscs();
+  openModal('modalDiscs');
+}
+async function renderDiscs() {
+  const body = $('#discsBody');
+  if (!APP.currentRom) {
+    body.innerHTML = '<p style="text-align:center;padding:24px;opacity:.6">Carrega uma ROM primeiro!</p>';
+    return;
+  }
+  const discs = APP.currentRom.discs || [APP.currentRom.data];
+  let html = `
+    <p style="font-size:12px;opacity:.7;background:var(--yellow);border:2px solid #000;padding:8px 12px;font-weight:600">
+      ROM: <b>${escapeHtml(APP.currentRom.name)}</b> · ${discs.length} disco(s)
+    </p>
+  `;
+  if (discs.length === 1) {
+    html += '<p style="text-align:center;padding:24px;opacity:.6">// SINGLE DISC GAME</p>';
+  } else {
+    html += discs.map((d, i) => `
+      <div class="disc-slot ${i === APP.currentDisk ? 'active' : ''}">
+        <div class="info">
+          <div class="name">DISCO ${i + 1}</div>
+          <div class="meta">${formatSize(d.byteLength)}${i === APP.currentDisk ? ' · ATIVO' : ''}</div>
+        </div>
+        ${i !== APP.currentDisk ? `<button class="slot-btn load" onclick="swapDisc(${i})">TROCAR</button>` : ''}
+      </div>
+    `).join('');
+  }
+  html += `
+    <p style="font-size:11px;opacity:.6;text-align:center">
+      Salve o jogo no memory card antes de trocar de disco (multi-CD games).
+    </p>
+  `;
+  body.innerHTML = html;
+}
+async function swapDisc(index) {
+  if (!APP.currentRom || !APP.currentRom.discs) return;
+  if (!APP.ejsReady || !APP.ejs.gameManager) { toast('Emulador não pronto', 'error'); return; }
+  try {
+    // Write new disc to FS
+    const discData = new Uint8Array(APP.currentRom.discs[index]);
+    // Find the current disc filename in FS
+    // EmulatorJS stores the ROM at a known path. Let's overwrite it.
+    // This is a simplified approach — may need adjustment per game.
+    const romPath = APP.ejs.gameManager.functions.getSaveFilePath().replace('/saves', '') + APP.ejs.config.gameName + '.bin';
+    APP.ejs.gameManager.FS.writeFile(romPath, discData);
+    // Set current disk via EmulatorJS API
+    APP.ejs.gameManager.functions.setCurrentDisk(index);
+    APP.currentDisk = index;
+    toast('Disco ' + (index + 1) + ' carregado', 'success');
+    renderDiscs();
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao trocar disco: ' + e.message, 'error');
+  }
+}
+
+/* ============================================================
+   MEMORY CARDS MODAL
+   ============================================================ */
+async function openMemoryCards() {
+  await renderMemoryCards();
+  openModal('modalMemoryCards');
+}
+async function renderMemoryCards() {
+  const body = $('#memoryCardsBody');
+  let html = '';
+  for (let slot = 1; slot <= 2; slot++) {
+    const mc = await getMemoryCard(slot);
+    const usedBlocks = mc ? countUsedBlocks(new Uint8Array(mc.data)) : 0;
+    html += `
+      <div class="save-slot">
+        <div class="info">
+          <div class="slot-n">MEMORY CARD ${slot}</div>
+          <div class="slot-meta">${mc ? formatSize(mc.size) + ' · ' + usedBlocks + '/15 blocks usados' : '— vazio —'}</div>
+        </div>
+        <div class="save-slot-actions">
+          <button class="slot-btn load" onclick="exportMemoryCard(${slot})">EXPORTAR</button>
+          <button class="slot-btn save" onclick="document.getElementById('mcInput${slot}').click()">IMPORTAR</button>
+          <button class="slot-btn del" onclick="clearMemoryCard(${slot})">FORMATAR</button>
+        </div>
+        <input type="file" id="mcInput${slot}" accept=".mcd,.bin,.gme" style="display:none" onchange="importMemoryCard(${slot}, this.files[0]); this.value=''">
+      </div>
+    `;
+  }
+  html += `
+    <p style="font-size:11px;opacity:.6;text-align:center">
+      Memory cards são persistidos no navegador (IndexedDB). Exporte pra fazer backup.
+    </p>
+  `;
+  body.innerHTML = html;
+}
+function countUsedBlocks(data) {
+  // PS1 memcard: 16 frames of directory, each frame has 16 entries of 16 bytes
+  // First byte of each entry: 0xA0=free, 0x51=used, 0x52=link, 0x53=end-of-chain
+  let used = 0;
+  for (let frame = 0; frame < 16; frame++) {
+    const frameOffset = frame * 0x80;
+    for (let entry = 0; entry < 16; entry++) {
+      const entryOffset = frameOffset + entry * 16;
+      const code = data[entryOffset];
+      if (code === 0x51 || code === 0x52 || code === 0x53) {
+        used++;
+        if (code === 0x53) return used;  // end of chain
+      } else if (code === 0xFF || code === 0xA0) {
+        return used;
+      }
+    }
+  }
+  return used;
+}
+
+/* ============================================================
+   SETTINGS MODAL
+   ============================================================ */
+function openSettings() {
+  renderSettings();
+  openModal('modalSettings');
+}
+function renderSettings() {
+  const body = $('#settingsBody');
+  body.innerHTML = `
+    <div class="settings-group">
+      <div class="setting-row">
+        <div>
+          <div class="lbl">MOSTRAR FPS</div>
+          <div class="desc">Exibe contador de quadros no HUD</div>
+        </div>
+        <div class="toggle ${APP.settings.showFps?'on':''}" onclick="toggleSetting('showFps', this)"></div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">FILTRO DE TELA</div>
+          <div class="desc">Visual do canvas (pixelado/suave/scanlines/CRT)</div>
+        </div>
+        <select style="border:2px solid #000;padding:6px;font-family:var(--font-mono);background:var(--bg)" onchange="setFilter(this.value)">
+          <option value="pixelated" ${APP.settings.filter==='pixelated'?'selected':''}>PIXELADO</option>
+          <option value="smooth" ${APP.settings.filter==='smooth'?'selected':''}>SUAVE</option>
+          <option value="scanlines" ${APP.settings.filter==='scanlines'?'selected':''}>SCANLINES</option>
+          <option value="crt" ${APP.settings.filter==='crt'?'selected':''}>CRT</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">CONTROLES TOUCH</div>
+          <div class="desc">auto = só no mobile · sempre = força exibir · nunca = desliga</div>
+        </div>
+        <select style="border:2px solid #000;padding:6px;font-family:var(--font-mono);background:var(--bg)" onchange="APP.settings.touchControls=this.value;persistSettings();updateTouchVisibility()">
+          <option value="auto" ${APP.settings.touchControls==='auto'?'selected':''}>AUTO</option>
+          <option value="always" ${APP.settings.touchControls==='always'?'selected':''}>SEMPRE</option>
+          <option value="never" ${APP.settings.touchControls==='never'?'selected':''}>NUNCA</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">PREFERIR PAISAGEM (MOBILE)</div>
+          <div class="desc">Pede pra girar o celular quando em retrato</div>
+        </div>
+        <div class="toggle ${APP.settings.preferLandscape?'on':''}" onclick="toggleSetting('preferLandscape', this);updateOrientationHint()"></div>
+      </div>
+      <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div>
+          <div class="lbl">BIOS PS1 (OPCIONAL)</div>
+          <div class="desc">PBL usa HLE (sem BIOS) por padrão. Se tu quiser melhor compatibilidade, carrega um SCPH1001.BIN (512KB). Sem BIOS ele já roda a maioria dos jogos.</div>
+        </div>
+        <button class="hud-btn" onclick="toast('HLE ativo — não precisa de BIOS', 'info')">
+          <span>✓ HLE ATIVO</span><span class="v">SEM BIOS</span>
+        </button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" style="flex:1;justify-content:center" onclick="clearAllData()">LIMPAR TUDO</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="closeModal('modalSettings')">FECHAR</button>
+    </div>
+  `;
+}
+async function toggleSetting(key, el) {
+  APP.settings[key] = !APP.settings[key];
+  el.classList.toggle('on', APP.settings[key]);
+  await persistSettings();
+  toast(key + ': ' + (APP.settings[key]?'ON':'OFF'), 'info');
+}
+function setFilter(f) {
+  APP.settings.filter = f;
+  applyFilter();
+  persistSettings();
+  document.querySelectorAll('.hud-btn[data-filter]').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === f);
+  });
+  toast('Filtro: ' + f, 'info');
+}
+function applyFilter() {
+  const f = APP.settings.filter;
+  const container = document.getElementById('ejs-container');
+  const canvases = container.querySelectorAll('canvas');
+  canvases.forEach(c => {
+    c.classList.toggle('smooth', f === 'smooth');
+    c.style.imageRendering = (f === 'smooth') ? 'auto' : 'pixelated';
+  });
+  const overlay = $('#filterOverlay');
+  overlay.className = 'screen-filter-overlay';
+  if (f === 'scanlines') overlay.classList.add('scanlines');
+  else if (f === 'crt') overlay.classList.add('crt');
+}
+async function clearAllData() {
+  if (!confirm('Apagar TODAS as ROMs, saves, memory cards e ajustes? Esta ação não pode ser desfeita.')) return;
+  indexedDB.deleteDatabase(DB_NAME);
+  localStorage.clear();
+  toast('Limpando... recarregue a página', 'info');
+  setTimeout(() => location.reload(), 1500);
+}
+
+/* ============================================================
+   SCREENSHOT
+   ============================================================ */
+function takeScreenshot() {
+  if (!APP.currentRom) {
+    toast('Carrega uma ROM primeiro!', 'info');
+    return;
+  }
+  try {
+    if (APP.ejsReady && APP.ejs.gameManager) {
+      // Use EJS native screenshot
+      APP.ejs.gameManager.functions.screenshot();
+      toast('Screenshot capturado!', 'success');
+      return;
+    }
+    // Fallback: capture canvas directly
+    const canvas = document.querySelector('#ejs-container canvas');
+    if (!canvas) { toast('Canvas não encontrado', 'error'); return; }
+    const dataUrl = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'pbl_' + (APP.currentRom.name || 'screenshot').replace(/[^a-z0-9]/gi,'_') + '_' + Date.now() + '.png';
+    a.click();
+    toast('Screenshot salvo!', 'success');
+  } catch (e) {
+    toast('Erro ao capturar: ' + e.message, 'error');
+  }
+}
+
+/* ============================================================
+   MODAL HELPERS
+   ============================================================ */
+function openModal(id) {
+  document.getElementById(id).classList.add('visible');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', (e) => {
+    if (e.target === m) m.classList.remove('visible');
+  });
+});
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg, type='info', duration=2800) {
+  const c = $('#toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ⓘ';
+  t.innerHTML = `<span class="t-icon">${icon}</span><span>${escapeHtml(msg)}</span>`;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('removing');
+    setTimeout(() => t.remove(), 250);
+  }, duration);
+}
+
+/* ============================================================
+   KEYBOARD INPUT
+   ============================================================ */
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+  if (_waitingForKey !== null) {
+    e.preventDefault();
+    let key = e.key;
+    if (key === ' ') key = 'Space';
+    APP.keyMap[_waitingForKey] = key;
+    _waitingForKey = null;
+    persistKeyMap();
+    rebuildReverseKeyMap();
+    renderKeymap();
+    renderKbdGrid();
+    toast('Mapeado: ' + key, 'success');
+    return;
+  }
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.visible').forEach(m => m.classList.remove('visible'));
+    return;
+  }
+  if (e.ctrlKey || e.metaKey) return;
+  // Global shortcuts
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); return; }
+  if (e.key === 'F5') { e.preventDefault(); quickSave(); return; }
+  if (e.key === 'F8') { e.preventDefault(); quickLoad(); return; }
+  if (e.key === 'F' || e.key === 'f') { if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleFullscreen(); return; } }
+  if (e.key === 'M' || e.key === 'm') { toggleMute(); return; }
+  if (e.key === 'K' || e.key === 'k') { openKeymap(); return; }
+  if (e.key === 'H' || e.key === 'h') { openCheats(); return; }
+  if (e.key === 'D' || e.key === 'd') { openDiscs(); return; }
+  if (e.key === 'E' || e.key === 'e') { openMemoryCards(); return; }
+  if (e.key === 'P' || e.key === 'p') { takeScreenshot(); return; }
+  if (e.key === ',') { openSettings(); return; }
+  if (['1','2','3','4'].includes(e.key)) { setSpeed(parseInt(e.key,10)); return; }
+  if (e.key === 'C' || e.key === 'c') { setFilter('crt'); return; }
+
+  // PS1 joypad input via EJS simulate_input
+  if (!APP.ejsReady || !APP.ejs || !APP.ejs.gameManager) return;
+  const norm = normalizeKey(e.key);
+  const bit = APP.reverseKeyMap[norm];
+  if (bit !== undefined) {
+    e.preventDefault();
+    if (!APP.pressedButtons.has(bit)) {
+      APP.pressedButtons.add(bit);
+      sendInput(bit, 1);
+      highlightTouchBtn(bit, true);
+    }
+  }
+});
+window.addEventListener('keyup', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+  if (!APP.ejsReady || !APP.ejs.gameManager) return;
+  const norm = normalizeKey(e.key);
+  const bit = APP.reverseKeyMap[norm];
+  if (bit !== undefined) {
+    e.preventDefault();
+    APP.pressedButtons.delete(bit);
+    sendInput(bit, 0);
+    highlightTouchBtn(bit, false);
+  }
+});
+
+function sendInput(libretroId, value) {
+  try {
+    if (APP.ejs && APP.ejs.gameManager) {
+      // simulate_input(port, libretroId, value)
+      // value: 1 = pressed, 0 = released (for digital buttons)
+      APP.ejs.gameManager.functions.simulateInput(0, libretroId, value);
+    }
+  } catch (e) { /* silent */ }
+}
+
+function highlightTouchBtn(bit, on) {
+  // Find the touch button with matching data-key that maps to this libretro ID
+  for (const [touchKey, libretroId] of Object.entries(TOUCH_KEYS)) {
+    if (libretroId === bit) {
+      const btn = document.querySelector(`.touch-controls [data-key="${touchKey}"]`);
+      if (btn) btn.classList.toggle('pressed', on);
+    }
+  }
+}
+
+/* ============================================================
+   TOUCH CONTROLS
+   ============================================================ */
+function setupTouchControls() {
+  document.querySelectorAll('.touch-controls [data-key]').forEach(btn => {
+    const touchKey = parseInt(btn.dataset.key, 10);
+    const libretroId = TOUCH_KEYS[touchKey];
+    if (libretroId === undefined) return;
+    const press = (e) => {
+      e.preventDefault();
+      btn.classList.add('pressed');
+      sendInput(libretroId, 1);
+    };
+    const release = (e) => {
+      e.preventDefault();
+      btn.classList.remove('pressed');
+      sendInput(libretroId, 0);
+    };
+    btn.addEventListener('touchstart', press, {passive:false});
+    btn.addEventListener('touchend', release, {passive:false});
+    btn.addEventListener('touchcancel', release, {passive:false});
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+  });
+
+  // Analog stick
+  setupAnalogStick();
+}
+
+function setupAnalogStick() {
+  const stick = document.getElementById('analogStick');
+  const knob = document.getElementById('analogKnob');
+  if (!stick || !knob) return;
+  const maxDist = 25; // pixels
+  let active = false;
+  let centerX = 0, centerY = 0;
+
+  const start = (e) => {
+    e.preventDefault();
+    active = true;
+    const rect = stick.getBoundingClientRect();
+    centerX = rect.left + rect.width / 2;
+    centerY = rect.top + rect.height / 2;
+    update(e);
+  };
+  const update = (e) => {
+    if (!active) return;
+    e.preventDefault();
+    const touch = e.touches ? e.touches[0] : e;
+    let dx = touch.clientX - centerX;
+    let dy = touch.clientY - centerY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > maxDist) {
+      dx = (dx / dist) * maxDist;
+      dy = (dy / dist) * maxDist;
+    }
+    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    // Send analog input (range -32768 to 32767)
+    const x = Math.round((dx / maxDist) * 32767);
+    const y = Math.round((dy / maxDist) * 32767);
+    sendInput(16, x);  // Analog X (libretro ID 16)
+    sendInput(17, y);  // Analog Y (libretro ID 17)
+  };
+  const end = (e) => {
+    if (!active) return;
+    e.preventDefault();
+    active = false;
+    knob.style.transform = 'translate(-50%, -50%)';
+    sendInput(16, 0);
+    sendInput(17, 0);
+  };
+  stick.addEventListener('touchstart', start, {passive:false});
+  stick.addEventListener('touchmove', update, {passive:false});
+  stick.addEventListener('touchend', end, {passive:false});
+  stick.addEventListener('touchcancel', end, {passive:false});
+  stick.addEventListener('mousedown', start);
+  window.addEventListener('mousemove', update);
+  window.addEventListener('mouseup', end);
+}
+
+function isMobile() {
+  const uaMobile = /Android|iPhone|iPad|iPod|Mobile|Windows Phone|BlackBerry|Opera Mini/i.test(navigator.userAgent);
+  const hasTouch = navigator.maxTouchPoints > 1 && window.matchMedia('(pointer: coarse)').matches;
+  const smallViewport = window.matchMedia('(max-width: 820px)').matches;
+  return uaMobile || hasTouch || smallViewport;
+}
+
+function updateTouchVisibility() {
+  const tc = $('#touchControls');
+  let show = false;
+  if (APP.settings.touchControls === 'always') show = true;
+  else if (APP.settings.touchControls === 'never') show = false;
+  else show = isMobile();
+  tc.classList.toggle('visible', show);
+  $('#touchToggleBtn').textContent = show ? '▼ ESCONDER' : '▲ CONTROLES';
+}
+
+function toggleTouch() {
+  const tc = $('#touchControls');
+  const isShown = tc.classList.contains('visible');
+  tc.classList.toggle('visible', !isShown);
+  $('#touchToggleBtn').textContent = !isShown ? '▼ ESCONDER' : '▲ CONTROLES';
+}
+
+/* ============================================================
+   DRAG & DROP
+   ============================================================ */
+let dragCounter = 0;
+window.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dragCounter++;
+  $('#dragOverlay').classList.add('visible');
+});
+window.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    $('#dragOverlay').classList.remove('visible');
+  }
+});
+window.addEventListener('dragover', (e) => { e.preventDefault(); });
+window.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  $('#dragOverlay').classList.remove('visible');
+  const files = Array.from(e.dataTransfer.files || []);
+  if (files.length > 0) {
+    await handleRomFile(files[0], files.slice(1));
+  }
+});
+
+const dropZone = $('#dropZone');
+['dragenter','dragover'].forEach(ev => {
+  dropZone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragging');
+  });
+});
+['dragleave','drop'].forEach(ev => {
+  dropZone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragging');
+  });
+});
+
+/* ============================================================
+   FULLSCREEN
+   ============================================================ */
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen?.().catch(() => {
+      toast('Tela cheia não suportada neste browser', 'error');
+    });
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  document.body.classList.toggle('fullscreen-mode', !!document.fullscreenElement);
+  if (document.fullscreenElement) {
+    document.body.classList.add('want-landscape');
+  } else {
+    document.body.classList.remove('want-landscape');
+  }
+  updateTouchVisibility();
+});
+
+function updateOrientationHint() {
+  document.body.classList.toggle('want-landscape', APP.settings.preferLandscape && isMobile() && !document.fullscreenElement);
+}
+window.addEventListener('orientationchange', updateOrientationHint);
+
+/* ============================================================
+   FPS LOOP (independent of EJS, just for HUD display)
+   ============================================================ */
+function fpsLoop(now) {
+  APP.rafId = requestAnimationFrame(fpsLoop);
+  if (!APP.isPlaying) return;
+  APP.fpsCounter++;
+  APP.fpsTimer += now - (APP.lastFrame || now);
+  APP.lastFrame = now;
+  if (APP.fpsTimer >= 1000) {
+    APP.fps = APP.fpsCounter;
+    $('#hud-fps').textContent = APP.settings.showFps ? APP.fps : '--';
+    APP.fpsCounter = 0;
+    APP.fpsTimer = 0;
+  }
+}
+
+/* ============================================================
+   KBD GRID (instructions)
+   ============================================================ */
+function renderKbdGrid() {
+  const grid = $('#kbdGrid');
+  grid.innerHTML = PSX_BUTTONS.map(b => `
+    <div class="kbd-row">
+      <span>${b.name}</span>
+      <span class="key">${escapeHtml(APP.keyMap[b.bit] || '—')}</span>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init() {
+  await loadPersisted();
+  await initMemoryCards();
+
+  const savedVol = localStorage.getItem('pbl_volume');
+  if (savedVol) {
+    APP.volume = parseFloat(savedVol);
+    $('#volumeSlider').value = Math.round(APP.volume * 100);
+    $('#volumeVal').textContent = Math.round(APP.volume * 100) + '%';
+  }
+
+  setupTouchControls();
+  updateTouchVisibility();
+  updateOrientationHint();
+  applyFilter();
+  document.querySelectorAll('.hud-btn[data-filter]').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === APP.settings.filter);
+  });
+  renderKbdGrid();
+  setSpeed(1);
+  await renderLibrary();
+  updateHud();
+  document.querySelectorAll('.hud-btn[data-speed]').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.speed,10) === 1);
+  });
+
+  window.addEventListener('resize', () => {
+    updateTouchVisibility();
+    updateOrientationHint();
+  });
+
+  // Start FPS loop
+  requestAnimationFrame(fpsLoop);
+
+  console.log('%c PBL · PLAY ULTIMATE ', 'background:#FF6B35;color:#fff;font-weight:bold;font-size:14px;padding:4px 8px');
+  console.log('%c BOTA O JOGO PRA RODAR ★ 32 BITS FOREVER ', 'background:#1A1A1A;color:#00D9FF;font-size:12px;padding:2px 6px');
+}
+
+window.addEventListener('load', () => {
+  setTimeout(init, 100);
+});
+
+// Make functions global for inline onclick handlers
+window.triggerRomUpload = triggerRomUpload;
+window.togglePlay = togglePlay;
+window.restartGame = restartGame;
+window.setSpeed = setSpeed;
+window.toggleMute = toggleMute;
+window.openSaveStates = openSaveStates;
+window.quickSave = quickSave;
+window.quickLoad = quickLoad;
+window.openKeymap = openKeymap;
+window.openSettings = openSettings;
+window.toggleFullscreen = toggleFullscreen;
+window.toggleTouch = toggleTouch;
+window.saveState = saveState;
+window.loadState = loadState;
+window.deleteState = deleteState;
+window.captureKey = captureKey;
+window.resetKeyMap = resetKeyMap;
+window.toggleSetting = toggleSetting;
+window.setFilter = setFilter;
+window.applyFilter = applyFilter;
+window.clearAllData = clearAllData;
+window.closeModal = closeModal;
+window.loadRomById = loadRomById;
+window.deleteRom = deleteRom;
+window.persistSettings = persistSettings;
+window.updateTouchVisibility = updateTouchVisibility;
+window.updateOrientationHint = updateOrientationHint;
+window.openCheats = openCheats;
+window.addCheat = addCheat;
+window.toggleCheat = toggleCheat;
+window.deleteCheat = deleteCheat;
+window.takeScreenshot = takeScreenshot;
+window.openDiscs = openDiscs;
+window.swapDisc = swapDisc;
+window.openMemoryCards = openMemoryCards;
+window.exportMemoryCard = exportMemoryCard;
+window.importMemoryCard = importMemoryCard;
+window.clearMemoryCard = clearMemoryCard;
+</script>
+</body>
+</html>
