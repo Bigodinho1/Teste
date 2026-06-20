@@ -1,1 +1,1 @@
-Nothing needs to be added to .gitignore since the changes only include HTML files (.html) which are source files and not build artifacts, dependencies, or temporary files.
+Nothing needs to be added to the .gitignore file based on the provided changes, as they only include HTML files which are source files that should be tracked in version control.
