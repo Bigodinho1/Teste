@@ -1,1 +1,1 @@
-Nothing needs to be added to the .gitignore file based on the provided changes, as they only include HTML files which are source files that should be tracked in version control.
+Nothing should be ignored based on the provided file changes. The changes only include HTML files (pbl.html and resumo.html), which are source files and not build artifacts, dependencies, or temporary files. Therefore, no .gitignore rules need to be added or modified.
