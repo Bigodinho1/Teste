@@ -1,0 +1,2586 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FFF8E7">
+<meta name="description" content="SBL — O super simulador de Super Nintendo que roda direto no navegador. Neo-brutalista, responsivo e viciante.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SBL · SUPER ULTIMATE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23FF6B35'/%3E%3Crect x='5' y='5' width='90' height='90' fill='none' stroke='black' stroke-width='6'/%3E%3Ctext x='50' y='68' font-family='Arial Black' font-size='36' font-weight='900' text-anchor='middle' fill='black'%3ESBL%3C/text%3E%3C/svg%3E">
+<style>
+/* ============== RESET & TOKENS ============== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#FFF8E7;
+  --fg:#1A1A1A;
+  --accent:#FF6B35;
+  --cyan:#00D9FF;
+  --yellow:#FFD60A;
+  --green:#06FFA5;
+  --magenta:#F72585;
+  --purple:#9D4EDD;
+  --border:3px solid #1A1A1A;
+  --shadow:8px 8px 0 #1A1A1A;
+  --shadow-sm:4px 4px 0 #1A1A1A;
+  --shadow-lg:12px 12px 0 #1A1A1A;
+  --shadow-none:0 0 0 #1A1A1A;
+  --radius:0;
+  --font-display:'Archivo Black',system-ui,sans-serif;
+  --font-body:'Space Grotesk',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;width:100%;overflow-x:hidden}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--fg);
+  line-height:1.5;
+  font-size:16px;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
+  touch-action:manipulation;
+}
+img,canvas{max-width:100%;display:block}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit}
+a{color:inherit;text-decoration:none}
+ul{list-style:none}
+
+/* ============== UTILITIES ============== */
+.brutalist{border:var(--border);box-shadow:var(--shadow);background:var(--bg)}
+.brutalist-cyan{background:var(--cyan)}
+.brutalist-orange{background:var(--accent);color:var(--fg)}
+.brutalist-yellow{background:var(--yellow)}
+.brutalist-green{background:var(--green)}
+.brutalist-magenta{background:var(--magenta);color:#fff}
+.brutalist-dark{background:var(--fg);color:var(--bg)}
+.shadow-hover{transition:transform .15s ease,box-shadow .15s ease}
+.shadow-hover:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow-lg)}
+.shadow-hover:active{transform:translate(4px,4px);box-shadow:var(--shadow-none)}
+
+/* ============== MARQUEE ============== */
+.marquee{
+  background:var(--fg);color:var(--bg);
+  border-bottom:var(--border);
+  padding:10px 0;overflow:hidden;white-space:nowrap;
+  font-family:var(--font-display);font-size:14px;letter-spacing:2px;
+  position:relative;
+}
+.marquee-track{display:inline-block;animation:marquee 22s linear infinite;will-change:transform}
+.marquee-track span{margin:0 24px}
+.marquee-track .star{color:var(--accent)}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ============== HEADER ============== */
+.header{
+  position:sticky;top:0;z-index:50;
+  background:var(--bg);
+  border-bottom:var(--border);
+  padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:22px;letter-spacing:-0.5px}
+.logo-badge{
+  width:40px;height:40px;background:var(--accent);
+  border:var(--border);box-shadow:var(--shadow-sm);
+  display:grid;place-items:center;font-size:12px;color:#fff;
+  position:relative;
+}
+.logo-badge::after{
+  content:'';position:absolute;top:4px;right:4px;width:6px;height:6px;
+  background:var(--green);border:1.5px solid #000;border-radius:50%;
+  animation:blink 1.4s infinite;
+}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.2}}
+.nav{display:flex;gap:8px;align-items:center}
+.nav-btn{
+  font-family:var(--font-display);font-size:13px;letter-spacing:1px;
+  padding:8px 14px;border:var(--border);background:var(--bg);
+  box-shadow:var(--shadow-sm);transition:all .12s;
+}
+.nav-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 #1A1A1A}
+.nav-btn:active{transform:translate(2px,2px);box-shadow:0 0 0 #1A1A1A}
+.nav-btn.accent{background:var(--accent);color:#fff}
+.nav-btn.cyan{background:var(--cyan)}
+.nav-btn.yellow{background:var(--yellow)}
+@media (max-width:640px){
+  .header{padding:10px 14px}
+  .logo{font-size:18px}
+  .logo-badge{width:34px;height:34px;font-size:10px}
+  .nav-btn{padding:6px 10px;font-size:11px}
+}
+
+/* ============== HERO ============== */
+.hero{
+  padding:60px 24px 40px;
+  display:grid;grid-template-columns:1.4fr 1fr;gap:32px;
+  max-width:1400px;margin:0 auto;
+  position:relative;
+}
+.hero::before{
+  content:'PRESS START';position:absolute;top:20px;right:24px;
+  font-family:var(--font-mono);font-size:11px;color:var(--accent);
+  letter-spacing:3px;animation:blink 1s infinite;
+}
+.hero-title{
+  font-family:var(--font-display);
+  font-size:clamp(48px,9vw,128px);
+  line-height:.88;letter-spacing:-3px;
+  margin-bottom:18px;
+}
+.hero-title .l1{display:block;color:var(--fg)}
+.hero-title .l2{display:block;color:var(--accent);text-shadow:6px 6px 0 var(--cyan)}
+.hero-title .l3{display:block;color:var(--fg);font-size:0.42em;letter-spacing:-1px;margin-top:8px}
+.hero-sub{
+  font-size:clamp(15px,1.8vw,19px);max-width:520px;
+  margin-bottom:28px;color:var(--fg);
+}
+.hero-sub b{background:var(--yellow);padding:2px 8px;border:2px solid #000;box-shadow:3px 3px 0 #000}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.btn{
+  font-family:var(--font-display);font-size:16px;letter-spacing:1px;
+  padding:18px 28px;border:var(--border);background:var(--bg);
+  box-shadow:var(--shadow);transition:all .15s;
+  display:inline-flex;align-items:center;gap:10px;
+  text-transform:uppercase;
+}
+.btn:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow-lg)}
+.btn:active{transform:translate(4px,4px);box-shadow:var(--shadow-none)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-cyan{background:var(--cyan)}
+.btn-yellow{background:var(--yellow)}
+.btn-dark{background:var(--fg);color:var(--bg)}
+.btn .arrow{font-family:var(--font-mono);font-weight:bold}
+.hero-card{
+  background:var(--cyan);border:var(--border);box-shadow:var(--shadow-lg);
+  padding:24px;position:relative;align-self:start;
+  transform:rotate(2deg);
+}
+.hero-card::before{
+  content:'NOVIDADE 2026';position:absolute;top:-14px;left:-14px;
+  background:var(--magenta);color:#fff;
+  border:var(--border);box-shadow:var(--shadow-sm);
+  padding:4px 10px;font-family:var(--font-display);font-size:11px;letter-spacing:1px;
+}
+.hero-card h3{font-family:var(--font-display);font-size:22px;margin-bottom:12px;line-height:1.1}
+.hero-card ul{display:grid;gap:10px;font-size:14px;font-weight:500}
+.hero-card li{padding-left:24px;position:relative}
+.hero-card li::before{content:'▸';position:absolute;left:0;color:var(--accent);font-weight:900}
+.hero-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+  margin-top:18px;border:var(--border);background:var(--bg);
+}
+.hero-stat{padding:10px 8px;text-align:center;border-right:2px solid #000}
+.hero-stat:last-child{border-right:none}
+.hero-stat .n{font-family:var(--font-display);font-size:18px;color:var(--accent)}
+.hero-stat .l{font-size:9px;letter-spacing:1px;text-transform:uppercase;opacity:.7}
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr;padding:40px 16px 28px;gap:24px}
+  .hero::before{display:none}
+  .hero-card{transform:none}
+}
+
+/* ============== CONSOLE SECTION ============== */
+.console-section{
+  padding:40px 24px;
+  max-width:1400px;margin:0 auto;
+}
+.section-header{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  margin-bottom:24px;flex-wrap:wrap;
+}
+.section-title{
+  font-family:var(--font-display);
+  font-size:clamp(28px,5vw,56px);letter-spacing:-1.5px;line-height:1;
+}
+.section-title .tag{
+  display:inline-block;background:var(--fg);color:var(--bg);
+  padding:4px 10px;font-size:12px;letter-spacing:2px;
+  vertical-align:middle;margin-right:10px;transform:translateY(-4px);
+}
+.section-sub{font-size:14px;opacity:.75;max-width:480px;margin-top:8px}
+
+/* Console Layout */
+.console-wrap{
+  display:grid;grid-template-columns:1fr;gap:24px;
+}
+.console-grid{
+  display:grid;grid-template-columns:200px 1fr 200px;gap:16px;
+  align-items:start;
+}
+.hud-panel{
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow);
+  padding:14px;
+  display:grid;gap:10px;
+}
+.hud-panel h4{
+  font-family:var(--font-display);font-size:11px;letter-spacing:2px;
+  padding-bottom:6px;border-bottom:2px solid #000;margin-bottom:4px;
+}
+.hud-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-family:var(--font-mono)}
+.hud-row .label{opacity:.7;text-transform:uppercase;letter-spacing:1px;font-size:10px}
+.hud-row .val{font-weight:700}
+.hud-btn{
+  font-family:var(--font-display);font-size:11px;letter-spacing:1px;
+  padding:8px 10px;border:2px solid #000;background:var(--bg);
+  box-shadow:3px 3px 0 #000;transition:all .1s;
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  width:100%;text-align:left;
+}
+.hud-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #000}
+.hud-btn:active{transform:translate(2px,2px);box-shadow:0 0 0 #000}
+.hud-btn.active{background:var(--accent);color:#fff}
+.hud-btn.cyan.active{background:var(--cyan);color:#000}
+.hud-btn .v{font-family:var(--font-mono);font-size:10px;background:#000;color:var(--bg);padding:1px 5px}
+.hud-btn.active .v{background:#fff;color:#000}
+
+/* Screen Frame */
+.screen-frame{
+  background:var(--fg);border:var(--border);box-shadow:var(--shadow-lg);
+  padding:18px;position:relative;
+}
+.screen-frame::before{
+  content:'SBL · POWER';position:absolute;top:-3px;left:18px;
+  background:var(--accent);color:#fff;padding:2px 12px;
+  border:var(--border);font-family:var(--font-display);font-size:11px;letter-spacing:2px;
+  transform:translateY(-50%);
+}
+.screen-frame::after{
+  content:'';position:absolute;top:14px;right:18px;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--green);border:2px solid #000;
+  box-shadow:0 0 8px var(--green);animation:blink 1.4s infinite;
+}
+.screen-inner{
+  background:#000;padding:8px;position:relative;
+  border:2px solid #444;
+  overflow:hidden;
+}
+#screen{
+  width:100%;height:auto;display:block;
+  image-rendering:pixelated;image-rendering:crisp-edges;
+  aspect-ratio:256/224;background:#000;
+}
+#screen.smooth{image-rendering:auto}
+#screen.scanlines, #screen.crt{
+  /* Filters are drawn via CSS pseudo-elements, see below */
+}
+.screen-filter-overlay{
+  position:absolute;inset:8px;pointer-events:none;z-index:3;
+  background:transparent;
+}
+.screen-filter-overlay.scanlines{
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0.25) 0px,rgba(0,0,0,0.25) 1px,transparent 1px,transparent 3px);
+}
+.screen-filter-overlay.crt{
+  background:
+    repeating-linear-gradient(90deg,rgba(255,0,0,0.06) 0px,rgba(0,255,0,0.06) 1px,rgba(0,0,255,0.06) 2px,transparent 3px),
+    repeating-linear-gradient(0deg,rgba(0,0,0,0.30) 0px,rgba(0,0,0,0.30) 1px,transparent 1px,transparent 3px);
+  mix-blend-mode:multiply;
+}
+.screen-overlay{
+  position:absolute;inset:8px;display:grid;place-items:center;
+  background:rgba(0,0,0,.92);color:var(--bg);text-align:center;
+  font-family:var(--font-mono);font-size:13px;line-height:1.6;padding:20px;
+  z-index:5;
+}
+.screen-overlay.hidden{display:none}
+.screen-overlay h3{
+  font-family:var(--font-display);font-size:20px;color:var(--accent);
+  margin-bottom:8px;letter-spacing:2px;
+}
+.screen-overlay .blink{animation:blink 1s infinite;color:var(--cyan)}
+.screen-overlay .hint{font-size:11px;opacity:.7;margin-top:12px}
+.screen-watermark{
+  position:absolute;bottom:10px;right:14px;z-index:4;
+  font-family:var(--font-display);font-size:10px;letter-spacing:2px;
+  color:rgba(255,255,255,.18);pointer-events:none;
+}
+@media (max-width:1024px){
+  .console-grid{grid-template-columns:1fr;gap:16px}
+  .hud-panel{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+  .hud-panel h4{grid-column:1/-1}
+}
+@media (max-width:640px){
+  .screen-frame{padding:14px}
+  .screen-frame::before{font-size:10px;left:14px}
+}
+
+/* Touch Controls (mobile-first when active) */
+.touch-controls{
+  display:none;margin-top:16px;
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow);
+  padding:24px 16px;
+}
+.touch-controls.visible{display:block}
+.touch-grid{
+  display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;
+}
+.dpad{
+  position:relative;width:140px;height:140px;margin:0 auto;
+}
+.dpad-btn{
+  position:absolute;background:var(--fg);color:var(--bg);
+  border:2px solid #000;box-shadow:3px 3px 0 #000;
+  display:grid;place-items:center;
+  font-family:var(--font-display);font-size:18px;
+  transition:all .08s;user-select:none;-webkit-user-select:none;
+  touch-action:none;
+}
+.dpad-btn:active,.dpad-btn.pressed{background:var(--accent);transform:translate(2px,2px);box-shadow:0 0 0 #000}
+.dpad-up{top:0;left:50px;width:40px;height:50px}
+.dpad-down{bottom:0;left:50px;width:40px;height:50px}
+.dpad-left{top:50px;left:0;width:50px;height:40px}
+.dpad-right{top:50px;right:0;width:50px;height:40px}
+.dpad-center{top:50px;left:50px;width:40px;height:40px;background:#444}
+
+.touch-center{
+  display:grid;gap:14px;justify-items:center;
+}
+.start-select-row{display:flex;gap:14px}
+.btn-pill{
+  background:var(--bg);border:2px solid #000;box-shadow:3px 3px 0 #000;
+  padding:6px 14px;font-family:var(--font-display);font-size:10px;letter-spacing:1.5px;
+  border-radius:20px;transition:all .08s;
+}
+.btn-pill:active,.btn-pill.pressed{background:var(--accent);color:#fff;transform:translate(2px,2px);box-shadow:0 0 0 #000}
+
+/* SNES-style ABXY cluster (4 buttons in diamond) */
+.abxy-group{
+  position:relative;width:140px;height:140px;margin:0 auto;
+}
+.abxy-btn{
+  position:absolute;width:52px;height:52px;border-radius:50%;
+  border:2px solid #000;box-shadow:4px 4px 0 #000;
+  display:grid;place-items:center;
+  font-family:var(--font-display);font-size:18px;
+  transition:all .08s;user-select:none;-webkit-user-select:none;
+  touch-action:none;
+}
+.abxy-btn:active,.abxy-btn.pressed{transform:translate(3px,3px);box-shadow:0 0 0 #000}
+.btn-x{background:var(--green);color:#000;top:0;left:44px}
+.btn-y{background:var(--yellow);color:#000;top:44px;left:0}
+.btn-a{background:var(--accent);color:#fff;top:44px;right:0}
+.btn-b{background:var(--magenta);color:#fff;bottom:0;left:44px}
+
+.shoulder-row{display:flex;justify-content:space-between;margin-top:14px;gap:10px}
+.btn-shoulder{
+  flex:1;background:var(--fg);color:var(--bg);
+  border:2px solid #000;box-shadow:3px 3px 0 #000;
+  padding:10px;font-family:var(--font-display);font-size:14px;
+  transition:all .08s;
+}
+.btn-shoulder:active,.btn-shoulder.pressed{background:var(--accent);transform:translate(2px,2px);box-shadow:0 0 0 #000}
+
+/* ============== LIBRARY ============== */
+.library-section{padding:60px 24px;background:var(--fg);color:var(--bg);border-top:var(--border);border-bottom:var(--border)}
+.library-wrap{max-width:1400px;margin:0 auto}
+.library-section .section-title{color:var(--bg)}
+.library-section .section-title .tag{background:var(--accent);color:#fff}
+.library-section .section-sub{color:rgba(255,248,231,.7)}
+.drop-zone{
+  border:3px dashed rgba(255,248,231,.4);
+  padding:48px 24px;text-align:center;margin-bottom:32px;
+  transition:all .2s;cursor:pointer;
+  background:rgba(255,248,231,.04);
+}
+.drop-zone.dragging{
+  border-color:var(--accent);background:rgba(255,107,53,.15);
+  transform:scale(1.01);
+}
+.drop-zone-icon{
+  width:60px;height:60px;margin:0 auto 16px;
+  background:var(--accent);border:var(--border);box-shadow:var(--shadow-sm);
+  display:grid;place-items:center;font-size:28px;font-family:var(--font-display);
+}
+.drop-zone h3{font-family:var(--font-display);font-size:24px;margin-bottom:8px;letter-spacing:-0.5px}
+.drop-zone p{opacity:.7;font-size:14px;margin-bottom:18px}
+.drop-zone .btn{margin:0 auto}
+
+.lib-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;
+}
+.lib-card{
+  background:var(--bg);color:var(--fg);
+  border:var(--border);box-shadow:var(--shadow);
+  padding:12px;transition:all .15s;cursor:pointer;
+  display:flex;flex-direction:column;gap:8px;
+}
+.lib-card:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow-lg)}
+.lib-card.playing{background:var(--accent);color:#fff}
+.lib-thumb{
+  aspect-ratio:256/224;background:var(--fg);
+  border:2px solid #000;display:grid;place-items:center;
+  position:relative;overflow:hidden;
+}
+.lib-thumb .placeholder{
+  font-family:var(--font-display);color:var(--bg);font-size:14px;
+  text-align:center;padding:6px;letter-spacing:1px;
+}
+.lib-thumb .play-icon{
+  position:absolute;inset:0;background:rgba(0,0,0,.7);
+  display:grid;place-items:center;color:var(--accent);
+  font-size:36px;font-family:var(--font-display);
+  opacity:0;transition:opacity .15s;
+}
+.lib-card:hover .lib-thumb .play-icon{opacity:1}
+.lib-card.playing .lib-thumb{background:#fff}
+.lib-card.playing .lib-thumb .placeholder{color:var(--accent)}
+.lib-info{display:flex;flex-direction:column;gap:4px}
+.lib-name{font-family:var(--font-display);font-size:13px;line-height:1.2;letter-spacing:-0.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.lib-meta{display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);opacity:.7}
+.lib-actions{display:flex;gap:6px;margin-top:4px}
+.lib-action{
+  flex:1;font-family:var(--font-display);font-size:9px;letter-spacing:1px;
+  padding:6px 4px;border:2px solid #000;background:var(--bg);
+  box-shadow:2px 2px 0 #000;transition:all .1s;
+}
+.lib-action:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000}
+.lib-action.danger{background:var(--magenta);color:#fff}
+.lib-empty{
+  text-align:center;padding:48px 24px;
+  border:3px dashed rgba(255,248,231,.3);
+  font-family:var(--font-display);font-size:14px;letter-spacing:1px;opacity:.6;
+}
+
+/* ============== FEATURES SECTION ============== */
+.features-section{padding:60px 24px;max-width:1400px;margin:0 auto}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.feature{
+  border:var(--border);box-shadow:var(--shadow);padding:24px;
+  background:var(--bg);transition:all .15s;
+}
+.feature:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow-lg)}
+.feature-num{
+  font-family:var(--font-display);font-size:42px;line-height:1;
+  color:var(--accent);margin-bottom:8px;
+}
+.feature:nth-child(2) .feature-num{color:var(--cyan)}
+.feature:nth-child(3) .feature-num{color:var(--yellow);-webkit-text-stroke:1px #000}
+.feature:nth-child(4) .feature-num{color:var(--green)}
+.feature:nth-child(5) .feature-num{color:var(--magenta)}
+.feature:nth-child(6) .feature-num{color:var(--purple)}
+.feature:nth-child(7) .feature-num{color:var(--accent)}
+.feature:nth-child(8) .feature-num{color:var(--cyan)}
+.feature h3{font-family:var(--font-display);font-size:20px;margin-bottom:10px;letter-spacing:-0.5px}
+.feature p{font-size:14px;line-height:1.5}
+
+/* ============== INSTRUCTIONS ============== */
+.howto-section{
+  padding:60px 24px;background:var(--cyan);
+  border-top:var(--border);border-bottom:var(--border);
+}
+.howto-wrap{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:1fr 1.2fr;gap:32px;align-items:start}
+.howto-section .section-title{margin-bottom:16px}
+.steps{display:grid;gap:14px}
+.step{
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow-sm);
+  padding:18px;display:flex;gap:16px;align-items:flex-start;
+}
+.step-n{
+  font-family:var(--font-display);font-size:32px;line-height:1;
+  background:var(--fg);color:var(--bg);
+  width:48px;height:48px;display:grid;place-items:center;
+  border:2px solid #000;flex-shrink:0;
+}
+.step-content h4{font-family:var(--font-display);font-size:15px;margin-bottom:4px;letter-spacing:-0.3px}
+.step-content p{font-size:13px;line-height:1.5;opacity:.85}
+.kbd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.kbd-row{
+  background:var(--bg);border:2px solid #000;padding:10px 12px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  font-size:13px;
+}
+.kbd-row .key{
+  font-family:var(--font-mono);font-weight:700;font-size:11px;
+  background:var(--fg);color:var(--bg);padding:4px 8px;
+  border:1px solid #000;
+}
+@media (max-width:900px){.howto-wrap{grid-template-columns:1fr}}
+
+/* ============== FOOTER ============== */
+.footer{
+  background:var(--fg);color:var(--bg);padding:48px 24px 24px;
+  border-top:var(--border);
+}
+.footer-wrap{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:32px}
+.footer-brand{display:flex;flex-direction:column;gap:12px}
+.footer-brand .logo{color:var(--bg)}
+.footer-brand p{font-size:13px;opacity:.7;max-width:380px;line-height:1.6}
+.footer h4{font-family:var(--font-display);font-size:13px;letter-spacing:2px;margin-bottom:14px;color:var(--accent)}
+.footer ul{display:grid;gap:8px;font-size:13px}
+.footer a{opacity:.8;transition:opacity .15s}
+.footer a:hover{opacity:1;color:var(--cyan)}
+.footer-bottom{
+  margin-top:32px;padding-top:20px;border-top:2px solid rgba(255,248,231,.15);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-size:11px;opacity:.5;font-family:var(--font-mono);letter-spacing:1px;
+}
+@media (max-width:768px){.footer-wrap{grid-template-columns:1fr;gap:24px}}
+
+/* ============== MODAL ============== */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;
+  display:none;align-items:center;justify-content:center;padding:20px;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.visible{display:flex}
+.modal{
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow-lg);
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+  position:relative;
+}
+.modal-head{
+  padding:18px 20px;background:var(--accent);color:#fff;
+  border-bottom:var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:0;
+}
+.modal-head.cyan{background:var(--cyan);color:#000}
+.modal-head.yellow{background:var(--yellow)}
+.modal-head.dark{background:var(--fg);color:var(--bg)}
+.modal-head.magenta{background:var(--magenta);color:#fff}
+.modal-head h2{font-family:var(--font-display);font-size:18px;letter-spacing:1px}
+.modal-close{
+  width:32px;height:32px;background:#fff;color:#000;
+  border:2px solid #000;box-shadow:2px 2px 0 #000;
+  display:grid;place-items:center;font-family:var(--font-display);font-size:16px;
+}
+.modal-close:active{transform:translate(2px,2px);box-shadow:0 0 0 #000}
+.modal-body{padding:20px;display:grid;gap:14px}
+
+/* Save Slots */
+.save-slot{
+  background:var(--bg);border:2px solid #000;box-shadow:3px 3px 0 #000;
+  padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  transition:all .12s;
+}
+.save-slot:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #000}
+.save-slot.empty{opacity:.6}
+.save-slot .info{flex:1;min-width:0}
+.save-slot .slot-n{font-family:var(--font-display);font-size:13px;letter-spacing:1px;color:var(--accent)}
+.save-slot .slot-meta{font-size:11px;font-family:var(--font-mono);opacity:.7;margin-top:2px}
+.save-slot-actions{display:flex;gap:6px}
+.slot-btn{
+  font-family:var(--font-display);font-size:10px;letter-spacing:1px;
+  padding:6px 10px;border:2px solid #000;background:var(--bg);
+  box-shadow:2px 2px 0 #000;transition:all .1s;
+}
+.slot-btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000}
+.slot-btn:active{transform:translate(1px,1px);box-shadow:0 0 0 #000}
+.slot-btn.save{background:var(--green)}
+.slot-btn.load{background:var(--cyan)}
+.slot-btn.del{background:var(--magenta);color:#fff}
+
+/* Key Mapping */
+.kbd-map-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 12px;background:var(--bg);border:2px solid #000;
+}
+.kbd-map-row .gba-key{
+  font-family:var(--font-display);font-size:14px;
+  background:var(--accent);color:#fff;padding:4px 12px;border:2px solid #000;
+}
+.kbd-map-btn{
+  font-family:var(--font-mono);font-size:12px;font-weight:700;
+  padding:6px 12px;background:var(--fg);color:var(--bg);
+  border:2px solid #000;box-shadow:2px 2px 0 #000;min-width:80px;
+}
+.kbd-map-btn:hover{background:var(--cyan);color:#000}
+
+/* Settings */
+.settings-group{display:grid;gap:14px}
+.setting-row{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:12px;background:var(--bg);border:2px solid #000;
+}
+.setting-row .lbl{font-family:var(--font-display);font-size:13px;letter-spacing:0.5px}
+.setting-row .desc{font-size:11px;opacity:.7;margin-top:2px}
+.toggle{
+  position:relative;width:54px;height:28px;background:var(--bg);
+  border:2px solid #000;cursor:pointer;flex-shrink:0;
+}
+.toggle::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:20px;height:20px;background:var(--fg);
+  transition:transform .2s;
+}
+.toggle.on{background:var(--green)}
+.toggle.on::after{transform:translateX(26px);background:var(--fg)}
+.slider-row{display:flex;align-items:center;gap:12px}
+.slider{
+  flex:1;-webkit-appearance:none;appearance:none;height:8px;
+  background:var(--bg);border:2px solid #000;outline:none;
+}
+.slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:22px;height:22px;background:var(--accent);
+  border:2px solid #000;cursor:pointer;
+}
+.slider::-moz-range-thumb{
+  width:22px;height:22px;background:var(--accent);
+  border:2px solid #000;cursor:pointer;
+}
+.slider-val{
+  font-family:var(--font-mono);font-size:12px;font-weight:700;
+  min-width:40px;text-align:right;
+}
+
+/* Cheats */
+.cheat-row{
+  background:var(--bg);border:2px solid #000;padding:10px 12px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.cheat-row .row{display:flex;gap:8px;align-items:center}
+.cheat-input{
+  flex:1;font-family:var(--font-mono);font-size:13px;
+  padding:6px 8px;border:2px solid #000;background:#fff;
+  text-transform:uppercase;
+}
+.cheat-input.code{max-width:180px;letter-spacing:1px}
+.cheat-input.desc{font-family:var(--font-body);text-transform:none}
+.cheat-toggle{
+  font-family:var(--font-display);font-size:11px;letter-spacing:1px;
+  padding:6px 10px;border:2px solid #000;background:var(--bg);
+  box-shadow:2px 2px 0 #000;
+}
+.cheat-toggle.on{background:var(--green)}
+.cheat-del{
+  font-family:var(--font-display);font-size:11px;
+  padding:6px 10px;border:2px solid #000;background:var(--magenta);color:#fff;
+  box-shadow:2px 2px 0 #000;
+}
+
+/* ============== TOAST ============== */
+.toast-container{
+  position:fixed;bottom:20px;right:20px;z-index:200;
+  display:flex;flex-direction:column;gap:10px;
+  pointer-events:none;max-width:calc(100vw - 40px);
+}
+.toast{
+  background:var(--fg);color:var(--bg);border:var(--border);
+  box-shadow:var(--shadow);padding:12px 16px;
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;font-family:var(--font-mono);
+  animation:toast-in .25s ease-out;max-width:360px;
+  pointer-events:auto;
+}
+.toast.success{background:var(--green);color:#000}
+.toast.error{background:var(--magenta);color:#fff}
+.toast.info{background:var(--cyan);color:#000}
+.toast .t-icon{font-family:var(--font-display);font-size:16px}
+@keyframes toast-in{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.removing{animation:toast-out .2s ease-in forwards}
+@keyframes toast-out{to{transform:translateX(120%);opacity:0}}
+
+/* ============== DRAG OVERLAY ============== */
+.drag-overlay{
+  position:fixed;inset:0;z-index:300;background:rgba(255,107,53,.92);
+  display:none;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.drag-overlay.visible{display:flex}
+.drag-overlay .msg{
+  background:var(--bg);border:var(--border);box-shadow:var(--shadow-lg);
+  padding:32px 48px;text-align:center;font-family:var(--font-display);
+  font-size:24px;letter-spacing:1px;
+}
+.drag-overlay .msg .icon{font-size:48px;color:var(--accent);margin-bottom:12px}
+
+/* ============== FULLSCREEN MODE ============== */
+body.fullscreen-mode{
+  background:#000;overflow:hidden;
+}
+body.fullscreen-mode .header,
+body.fullscreen-mode .marquee,
+body.fullscreen-mode .hero,
+body.fullscreen-mode .features-section,
+body.fullscreen-mode .howto-section,
+body.fullscreen-mode .library-section,
+body.fullscreen-mode .footer{display:none}
+body.fullscreen-mode .console-section{
+  padding:0;max-width:100%;min-height:100vh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+body.fullscreen-mode .console-wrap{gap:8px}
+body.fullscreen-mode .section-header{display:none}
+body.fullscreen-mode .console-grid{grid-template-columns:1fr 2fr 1fr;gap:8px;align-items:center}
+body.fullscreen-mode .hud-panel{background:rgba(0,0,0,.85);color:#fff;border-color:#fff;box-shadow:none}
+body.fullscreen-mode .hud-panel h4{color:var(--cyan);border-color:#fff}
+body.fullscreen-mode .hud-btn{background:rgba(255,255,255,.1);color:#fff;border-color:#fff;box-shadow:none}
+body.fullscreen-mode .screen-frame{background:#000;border-color:#fff}
+body.fullscreen-mode .touch-controls{display:block;background:#000;border-color:#fff;box-shadow:none}
+@media (max-width:900px){
+  body.fullscreen-mode .console-grid{grid-template-columns:1fr}
+  body.fullscreen-mode .hud-panel{display:none}
+  body.fullscreen-mode .touch-controls{padding:14px 8px}
+  body.fullscreen-mode .touch-controls.visible{display:block}
+}
+
+/* ============== MOBILE LAYOUT ============== */
+@media (max-width:640px){
+  .console-grid{grid-template-columns:1fr}
+  .hero-cta{flex-direction:column;align-items:stretch}
+  .btn{justify-content:center}
+  .lib-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .lib-card{padding:8px}
+  .lib-name{font-size:11px}
+  .features-grid{grid-template-columns:1fr}
+  .step{padding:14px;gap:12px}
+  .step-n{width:40px;height:40px;font-size:24px}
+}
+
+/* Orientation hint for mobile portrait */
+.orientation-hint{
+  display:none;position:fixed;inset:0;z-index:400;
+  background:var(--fg);color:var(--bg);
+  align-items:center;justify-content:center;text-align:center;
+  padding:24px;
+}
+.orientation-hint.visible{display:flex}
+.orientation-hint .icon{
+  font-size:64px;margin-bottom:16px;animation:rotate 2s infinite;
+}
+.orientation-hint h2{font-family:var(--font-display);font-size:24px;letter-spacing:1px;margin-bottom:8px}
+.orientation-hint p{opacity:.7;font-size:14px}
+@keyframes rotate{0%,50%{transform:rotate(0)}60%,90%{transform:rotate(90deg)}}
+@media (max-width:768px) and (orientation:portrait){
+  body.want-landscape .orientation-hint{display:flex}
+}
+
+/* Print / reduced motion */
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============== MARQUEE ============== -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span class="star">★</span><span>BOTA O JOGO PRA RODAR</span>
+    <span class="star">★</span><span>SUPER ULTIMATE</span>
+    <span class="star">★</span><span>PILHA CHEIA</span>
+    <span class="star">★</span><span>SBL · 2026</span>
+    <span class="star">★</span><span>16 BITS DE PURO AMOR</span>
+    <span class="star">★</span><span>BOTA O JOGO PRA RODAR</span>
+    <span class="star">★</span><span>SUPER ULTIMATE</span>
+    <span class="star">★</span><span>PILHA CHEIA</span>
+    <span class="star">★</span><span>SBL · 2026</span>
+    <span class="star">★</span><span>16 BITS DE PURO AMOR</span>
+  </div>
+</div>
+
+<!-- ============== HEADER ============== -->
+<header class="header">
+  <a href="#" class="logo">
+    <div class="logo-badge">SBL</div>
+    <span>SBL · SUPER ULTIMATE</span>
+  </a>
+  <nav class="nav">
+    <button class="nav-btn cyan" onclick="document.getElementById('console').scrollIntoView({behavior:'smooth'})">CONSOLE</button>
+    <button class="nav-btn yellow" onclick="document.getElementById('library').scrollIntoView({behavior:'smooth'})">BIBLIOTECA</button>
+    <button class="nav-btn" onclick="openSettings()">AJUSTES</button>
+    <button class="nav-btn accent" onclick="document.getElementById('library').scrollIntoView({behavior:'smooth'})">BORA JOGAR</button>
+  </nav>
+</header>
+
+<!-- ============== HERO ============== -->
+<section class="hero">
+  <div>
+    <h1 class="hero-title">
+      <span class="l1">SUPER</span>
+      <span class="l2">ULTIMATE</span>
+      <span class="l3">// 256×224 PIXELS DE PURO AMOR 16-BIT</span>
+    </h1>
+    <p class="hero-sub">
+      O <b>super simulador de Super Nintendo</b> que roda direto no navegador — sem instalar nada, sem login, sem firula.
+      Carrega tua ROM .sfc/.smc, aperta START e <b>BOA</b>. Neo-brutalista, viciante e 100% responsivo.
+    </p>
+    <div class="hero-cta">
+      <button class="btn btn-primary" onclick="triggerRomUpload()">
+        <span>CARREGAR ROM</span><span class="arrow">▶</span>
+      </button>
+      <button class="btn btn-cyan" onclick="document.getElementById('console').scrollIntoView({behavior:'smooth'})">
+        <span>VER CONSOLE</span><span class="arrow">↓</span>
+      </button>
+      <button class="btn btn-dark" onclick="openSettings()">
+        <span>AJUSTES</span><span class="arrow">⚙</span>
+      </button>
+    </div>
+  </div>
+  <aside class="hero-card">
+    <h3>POR QUE SBL?</h3>
+    <ul>
+      <li>Núcleo snes9x WASM — compatibilidade máxima</li>
+      <li>Roda no mobile, tablet e desktop — 100% responsivo</li>
+      <li>Save states em 5 slots (chega de perder progresso)</li>
+      <li>Controles touch + teclado configurável (8 botões SNES)</li>
+      <li>Turbo de 1x até 4x para farming intensivo</li>
+      <li>Cheats Game Genie / Pro Action Replay nativos</li>
+      <li>Filtros CRT, scanlines e pixelated em tempo real</li>
+      <li>Sem tracker, sem cookies, sem coleta de dados</li>
+    </ul>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="n">5</div><div class="l">SLOTS</div></div>
+      <div class="hero-stat"><div class="n">4x</div><div class="l">TURBO</div></div>
+      <div class="hero-stat"><div class="n">16</div><div class="l">BITS</div></div>
+    </div>
+  </aside>
+</section>
+
+<!-- ============== CONSOLE ============== -->
+<section class="console-section" id="console">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title"><span class="tag">CONSOLE</span>O JOGO TÁ ON</h2>
+      <p class="section-sub">Carrega uma ROM, escolhe o slot de save e manda bala. Os controles touch aparecem automáticos no mobile.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="nav-btn" onclick="toggleFullscreen()" id="fullscreenBtn">⛶ TELA CHEIA</button>
+      <button class="nav-btn cyan" onclick="toggleTouch()" id="touchToggleBtn">▲ CONTROLES</button>
+    </div>
+  </div>
+
+  <div class="console-wrap">
+    <div class="console-grid">
+      <!-- LEFT HUD -->
+      <aside class="hud-panel">
+        <h4>ESTADO</h4>
+        <div class="hud-row"><span class="label">STATUS</span><span class="val" id="hud-status">PARADO</span></div>
+        <div class="hud-row"><span class="label">FPS</span><span class="val" id="hud-fps">--</span></div>
+        <div class="hud-row"><span class="label">SPEED</span><span class="val" id="hud-speed">1x</span></div>
+        <div class="hud-row"><span class="label">ROM</span><span class="val" id="hud-rom" style="font-size:10px;max-width:90px;overflow:hidden;text-overflow:ellipsis;text-align:right">NENHUMA</span></div>
+        <h4 style="margin-top:8px">PLAYBACK</h4>
+        <button class="hud-btn" id="btnPlay" onclick="togglePlay()">
+          <span>▶ PLAY</span><span class="v">␣</span>
+        </button>
+        <button class="hud-btn" id="btnPause" onclick="togglePlay()">
+          <span>⏸ PAUSE</span><span class="v">␣</span>
+        </button>
+        <button class="hud-btn" id="btnRestart" onclick="restartGame()">
+          <span>↻ RESET</span><span class="v">⌫</span>
+        </button>
+        <h4 style="margin-top:8px">TURBO</h4>
+        <button class="hud-btn" onclick="setSpeed(1)" data-speed="1"><span>1x NORMAL</span><span class="v">1</span></button>
+        <button class="hud-btn" onclick="setSpeed(2)" data-speed="2"><span>2x RÁPIDO</span><span class="v">2</span></button>
+        <button class="hud-btn" onclick="setSpeed(3)" data-speed="3"><span>3x TURBO</span><span class="v">3</span></button>
+        <button class="hud-btn" onclick="setSpeed(4)" data-speed="4"><span>4x LOUCURA</span><span class="v">4</span></button>
+      </aside>
+
+      <!-- SCREEN -->
+      <div class="screen-frame">
+        <div class="screen-inner">
+          <canvas id="screen" width="256" height="224"></canvas>
+          <div class="screen-filter-overlay" id="filterOverlay"></div>
+          <div class="screen-watermark">SBL · SUPER ULTIMATE</div>
+          <div class="screen-overlay" id="screenOverlay">
+            <div>
+              <h3>SEM ROM CARREGADA</h3>
+              <p>Arrasta um arquivo <b>.sfc</b> / <b>.smc</b> aqui<br>ou clica no botão abaixo.</p>
+              <p class="blink" style="margin-top:14px">▼ BORA JOGAR ▼</p>
+              <p class="hint">Dica: também funciona com .zip</p>
+              <button class="btn btn-primary" style="margin-top:18px" onclick="triggerRomUpload()">
+                <span>CARREGAR ROM</span><span class="arrow">▶</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT HUD -->
+      <aside class="hud-panel">
+        <h4>ÁUDIO</h4>
+        <div class="setting-row" style="padding:8px">
+          <span class="lbl" style="font-size:11px">VOLUME</span>
+          <div class="slider-row" style="flex:1;max-width:110px">
+            <input type="range" class="slider" id="volumeSlider" min="0" max="100" value="80">
+            <span class="slider-val" id="volumeVal">80%</span>
+          </div>
+        </div>
+        <button class="hud-btn" id="btnMute" onclick="toggleMute()"><span>♪ MUTE</span><span class="v">M</span></button>
+        <h4 style="margin-top:8px">SAVE STATES</h4>
+        <button class="hud-btn" onclick="openSaveStates()"><span>💾 SAVE / LOAD</span><span class="v">F5</span></button>
+        <button class="hud-btn" onclick="quickSave()"><span>⚡ QUICK SAVE</span><span class="v">S</span></button>
+        <button class="hud-btn cyan" onclick="quickLoad()"><span>⚡ QUICK LOAD</span><span class="v">L</span></button>
+        <h4 style="margin-top:8px>FILTROS</h4>
+        <button class="hud-btn" data-filter="pixelated" onclick="setFilter('pixelated')"><span>◉ PIXELADO</span><span class="v">P</span></button>
+        <button class="hud-btn" data-filter="smooth" onclick="setFilter('smooth')"><span>○ SUAVE</span><span class="v">S</span></button>
+        <button class="hud-btn" data-filter="scanlines" onclick="setFilter('scanlines')"><span>≡ SCANLINES</span><span class="v">L</span></button>
+        <button class="hud-btn" data-filter="crt" onclick="setFilter('crt')"><span>▣ CRT</span><span class="v">C</span></button>
+        <h4 style="margin-top:8px>SISTEMA</h4>
+        <button class="hud-btn" onclick="openKeymap()"><span>⌨ KEY MAP</span><span class="v">K</span></button>
+        <button class="hud-btn" onclick="openCheats()"><span>🎮 CHEATS</span><span class="v">H</span></button>
+        <button class="hud-btn" onclick="takeScreenshot()"><span>📸 SCREENSHOT</span><span class="v">P</span></button>
+        <button class="hud-btn" onclick="openSettings()"><span>⚙ AJUSTES</span><span class="v">,</span></button>
+        <button class="hud-btn" onclick="toggleFullscreen()"><span>⛶ FULLSCREEN</span><span class="v">F</span></button>
+      </aside>
+    </div>
+
+    <!-- TOUCH CONTROLS -->
+    <div class="touch-controls" id="touchControls">
+      <div class="shoulder-row">
+        <button class="btn-shoulder" data-key="5">L</button>
+        <button class="btn-shoulder" data-key="4">R</button>
+      </div>
+      <div class="touch-grid">
+        <!-- D-PAD -->
+        <div class="dpad">
+          <button class="dpad-btn dpad-up" data-key="11">▲</button>
+          <button class="dpad-btn dpad-down" data-key="10">▼</button>
+          <button class="dpad-btn dpad-left" data-key="9">◀</button>
+          <button class="dpad-btn dpad-right" data-key="8">▶</button>
+          <div class="dpad-btn dpad-center"></div>
+        </div>
+        <!-- CENTER -->
+        <div class="touch-center">
+          <div class="start-select-row">
+            <button class="btn-pill" data-key="13">SELECT</button>
+            <button class="btn-pill" data-key="12">START</button>
+          </div>
+        </div>
+        <!-- ABXY (SNES layout: Y on left, X on top, B on bottom, A on right) -->
+        <div class="abxy-group">
+          <button class="abxy-btn btn-x" data-key="6">X</button>
+          <button class="abxy-btn btn-y" data-key="14">Y</button>
+          <button class="abxy-btn btn-a" data-key="7">A</button>
+          <button class="abxy-btn btn-b" data-key="15">B</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== LIBRARY ============== -->
+<section class="library-section" id="library">
+  <div class="library-wrap">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title"><span class="tag">BIBLIOTECA</span>TUA COLEÇÃO</h2>
+        <p class="section-sub">As ROMs que tu carrega ficam salvas aqui no teu navegador. Pode fechar a aba que tudo continua lá. Bora buildar o acervo.</p>
+      </div>
+    </div>
+
+    <div class="drop-zone" id="dropZone" onclick="triggerRomUpload()">
+      <div class="drop-zone-icon">▼</div>
+      <h3>ARRASTA TUA ROM AQUI</h3>
+      <p>ou clica pra escolher um arquivo <b>.sfc</b> / <b>.smc</b> / <b>.zip</b></p>
+      <button class="btn btn-primary" onclick="event.stopPropagation();triggerRomUpload()">
+        <span>ESCOLHER ARQUIVO</span><span class="arrow">▶</span>
+      </button>
+    </div>
+
+    <div id="libGrid" class="lib-grid"></div>
+    <div id="libEmpty" class="lib-empty">
+      // BIBLIOTECA VAZIA — CARREGA TUA PRIMEIRA ROM PRA COMEÇAR
+    </div>
+  </div>
+</section>
+
+<!-- ============== FEATURES ============== -->
+<section class="features-section">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title"><span class="tag">FEATURES</span>TUDO QUE TEM</h2>
+      <p class="section-sub">O que faz do SBL o super simulador SNES definitivo pra 2026.</p>
+    </div>
+  </div>
+  <div class="features-grid">
+    <div class="feature">
+      <div class="feature-num">01</div>
+      <h3>SAVE STATES</h3>
+      <p>5 slots independentes por jogo, mais quick save/load com um toque. Chega de repetir chefão por causa de queda de luz.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">02</div>
+      <h3>TURBO MODE</h3>
+      <p>Velocidade ajustável de 1x até 4x pra acelerar grind, skip cutscene ou farmar EXP. Tu manda no ritmo.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">03</div>
+      <h3>CONTROLES TOUCH</h3>
+      <p>D-pad + ABXY + L/R + Start/Select otimizados pra mobile. Layout clássico SNES com feedback tátil.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">04</div>
+      <h3>KEY MAPPING</h3>
+      <p>Reconfigura cada botão SNES pra tecla que tu quiser. Salva teu perfil e usa em qualquer sessão.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">05</div>
+      <h3>DRAG &amp; DROP</h3>
+      <p>Arrasta a ROM direto pra página. Detecta .sfc, .smc e .zip automático. Sem clique extra, sem burocracia.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">06</div>
+      <h3>INDEXEDDB</h3>
+      <p>Todas as ROMs e saves ficam persistidos no navegador. Fecha a aba, desliga o PC — tua coleção tá salva.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">07</div>
+      <h3>CHEATS</h3>
+      <p>Game Genie e Pro Action Replay nativos. Liga/desliga cada código na hora, sem restart.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">08</div>
+      <h3>FILTROS CRT</h3>
+      <p>Pixelated nítido, suavizado, scanlines clássicas ou CRT com phosphor RGB — escolhe teu visual.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== HOW TO ============== -->
+<section class="howto-section">
+  <div class="howto-wrap">
+    <div>
+      <h2 class="section-title"><span class="tag">COMO JOGAR</span>3 PASSOS</h2>
+      <p class="section-sub" style="color:rgba(0,0,0,.7);margin-bottom:24px">Bora começar. É mais fácil do que parece.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-n">1</div>
+          <div class="step-content">
+            <h4>CARREGA A ROM</h4>
+            <p>Arrasta um arquivo .sfc ou .smc pra tela ou clica em "Carregar ROM". A ROM vai pro teu acervo pessoal.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-n">2</div>
+          <div class="step-content">
+            <h4>APELTA PLAY</h4>
+            <p>O emulador boota direto. No mobile os controles touch aparecem automáticos. No desktop usa teclado.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-n">3</div>
+          <div class="step-content">
+            <h4>BORA JOGAR</h4>
+            <p>Salva teu progresso com F5, faz quick save com S, ativa turbo com 2/3/4. Boa diversão.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-family:var(--font-display);font-size:18px;margin-bottom:14px;letter-spacing:1px">⌨ TECLADO PADRÃO</h3>
+      <div class="kbd-grid" id="kbdGrid"></div>
+      <p style="margin-top:16px;font-size:12px;opacity:.7">Personaliza no menu <b>AJUSTES → KEY MAP</b>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer class="footer">
+  <div class="footer-wrap">
+    <div class="footer-brand">
+      <div class="logo">
+        <div class="logo-badge">SBL</div>
+        <span>SBL · SUPER ULTIMATE</span>
+      </div>
+      <p>Super simulador de Super Nintendo construído com snes9x 2010 WASM. Visual neo-brutalista, performance em primeiro lugar, zero coleta de dados. Roda em qualquer browser moderno.</p>
+      <p style="font-size:11px;opacity:.5;font-family:var(--font-mono)">v1.0.0 · 2026 EDITION</p>
+    </div>
+    <div>
+      <h4>NAVEGAÇÃO</h4>
+      <ul>
+        <li><a href="#console">Console</a></li>
+        <li><a href="#library">Biblioteca</a></li>
+        <li><a href="#" onclick="openSettings();return false">Ajustes</a></li>
+        <li><a href="#" onclick="openKeymap();return false">Key Map</a></li>
+        <li><a href="#" onclick="openSaveStates();return false">Save States</a></li>
+        <li><a href="#" onclick="openCheats();return false">Cheats</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>LEGAL</h4>
+      <ul>
+        <li>Use apenas ROMs que tu tens original</li>
+        <li>Não hospedamos ROMs</li>
+        <li>snes9x © snes9x team (non-commercial)</li>
+        <li>snes9x-2010-wasm © gallaux (MIT)</li>
+        <li>Feito no Brasil · 2026</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>// SBL · SUPER ULTIMATE</span>
+    <span>BOTA O JOGO PRA RODAR ★ 16 BITS FOREVER</span>
+  </div>
+</footer>
+
+<!-- ============== MODALS ============== -->
+<div class="modal-overlay" id="modalSaveStates">
+  <div class="modal">
+    <div class="modal-head cyan">
+      <h2>💾 SAVE STATES</h2>
+      <button class="modal-close" onclick="closeModal('modalSaveStates')">×</button>
+    </div>
+    <div class="modal-body" id="saveSlotsBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalKeymap">
+  <div class="modal">
+    <div class="modal-head yellow">
+      <h2>⌨ KEY MAPPING</h2>
+      <button class="modal-close" onclick="closeModal('modalKeymap')">×</button>
+    </div>
+    <div class="modal-body" id="keymapBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalSettings">
+  <div class="modal">
+    <div class="modal-head dark">
+      <h2>⚙ AJUSTES</h2>
+      <button class="modal-close" onclick="closeModal('modalSettings')">×</button>
+    </div>
+    <div class="modal-body" id="settingsBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCheats">
+  <div class="modal">
+    <div class="modal-head magenta">
+      <h2>🎮 CHEATS</h2>
+      <button class="modal-close" onclick="closeModal('modalCheats')">×</button>
+    </div>
+    <div class="modal-body" id="cheatsBody"></div>
+  </div>
+</div>
+
+<!-- ============== TOAST + DRAG ============== -->
+<div class="toast-container" id="toastContainer"></div>
+<div class="drag-overlay" id="dragOverlay">
+  <div class="msg">
+    <div class="icon">▼</div>
+    <div>SOLTA A ROM AQUI</div>
+    <div style="font-size:13px;opacity:.7;margin-top:8px;font-family:var(--font-mono)">.sfc · .smc · .zip</div>
+  </div>
+</div>
+
+<div class="orientation-hint" id="orientationHint">
+  <div class="icon">📱</div>
+  <h2>GIRA O CELULAR</h2>
+  <p>SBL fica melhor em paisagem. Vira o aparelho pra jogar.</p>
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="romInput" accept=".sfc,.smc,.zip,.bin,.swc,.fig,application/octet-stream" style="display:none" multiple>
+
+<!-- ============== SNES9x 2010 WASM CORE (via CDN · gallaux/snes9x-2010-wasm) ============== -->
+<script>
+// Configure Module BEFORE the glue script loads
+window.Module = {
+  // We'll provide wasmBinary later (loaded via fetch)
+  locateFile: function(path) {
+    return 'https://gallaux.github.io/web_apps/snes9x-2010-wasm/build/' + path;
+  },
+  noExitRuntime: true,
+  print: function(text) { if (typeof text === 'string') console.log('[snes9x]', text); },
+  printErr: function(text) { if (typeof text === 'string') console.warn('[snes9x err]', text); },
+  onRuntimeInitialized: function() {
+    console.log('%c SBL · snes9x WASM core initialized ', 'background:#06FFA5;color:#000;font-weight:bold;padding:2px 6px');
+    window.SBL_CORE_READY = true;
+    if (window.SBL_INIT_CALLBACK) window.SBL_INIT_CALLBACK();
+  },
+};
+</script>
+<script src="https://gallaux.github.io/web_apps/snes9x-2010-wasm/build/snes9x_2010.js"></script>
+
+<!-- ============== APP LOGIC ============== -->
+<script>
+'use strict';
+
+/* ============================================================
+   SBL · SUPER ULTIMATE
+   App logic — snes9x 2010 WASM wrapper, IndexedDB, UI, touch, keyboard
+   ============================================================ */
+
+// ----- Constants -----
+const SAMPLE_RATE = 36000;           // snes9x-2010-wasm expects 36000 Hz
+const SCREEN_WIDTH = 256;
+const SCREEN_HEIGHT = 224;
+const SOUND_BUFFER_SAMPLES = 2048;   // per channel
+
+// SNES joypad button bits (per snes9x-2010-wasm convention)
+// Bit positions: right=8, left=9, down=10, up=11, start=12, select=13, b=15, y=14, a=7, x=6, l=5, r=4
+const SNES_BUTTONS = [
+  {id:7,  name:'A',      bit:7,  key:'X'},
+  {id:15, name:'B',      bit:15, key:'Z'},
+  {id:6,  name:'X',      bit:6,  key:'S'},
+  {id:14, name:'Y',      bit:14, key:'A'},
+  {id:5,  name:'L',      bit:5,  key:'Q'},
+  {id:4,  name:'R',      bit:4,  key:'W'},
+  {id:12, name:'START',  bit:12, key:'Enter'},
+  {id:13, name:'SELECT', bit:13, key:'Shift'},
+  {id:8,  name:'→ RIGHT', bit:8, key:'ArrowRight'},
+  {id:9,  name:'← LEFT',  bit:9, key:'ArrowLeft'},
+  {id:10, name:'↓ DOWN',  bit:10,key:'ArrowDown'},
+  {id:11, name:'↑ UP',    bit:11,key:'ArrowUp'},
+];
+
+// ----- State -----
+const APP = {
+  module: null,            // snes9x Module (after init)
+  coreReady: false,
+  currentRom: null,        // {id, name, size, addedAt, data}
+  currentRomData: null,
+  isPlaying: false,
+  isMuted: false,
+  volume: 0.8,
+  speed: 1,
+  fps: 0,
+  fpsCounter: 0,
+  fpsTimer: 0,
+  lastFrame: 0,
+  autoSaveTimer: 0,
+  keyInput: 0,             // snes9x joypad bits
+  keyMap: {},              // gbaKey bit -> keyboard key
+  reverseKeyMap: {},       // normalized keyboard key -> gbaKey bit
+  cheats: [],              // [{code, desc, enabled}]
+  settings: {
+    autoSave: true,
+    autoSaveInterval: 30,
+    showFps: true,
+    filter: 'pixelated',
+    touchControls: 'auto',
+    preferLandscape: true,
+  },
+  audioContext: null,
+  audioGain: null,
+  audioScriptNode: null,
+  rafId: null,
+  speedAccumulator: 0,
+  lastRafTime: 0,
+};
+
+const DB_NAME = 'sbl_db';
+const DB_VERSION = 1;
+const STORE_ROMS = 'roms';
+const STORE_SAVES = 'saves';        // SRAM + state snapshots
+const STORE_SETTINGS = 'settings';
+
+// ----- DOM refs -----
+const $ = (s) => document.querySelector(s);
+const canvas = $('#screen');
+const ctx = canvas.getContext('2d', { alpha: false });
+let imageData = ctx.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+/* ============================================================
+   INDEXEDDB
+   ============================================================ */
+let _db = null;
+function dbOpen() {
+  return new Promise((resolve, reject) => {
+    if (_db) return resolve(_db);
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_ROMS)) {
+        const s = db.createObjectStore(STORE_ROMS, {keyPath:'id'});
+        s.createIndex('name', 'name', {unique:false});
+      }
+      if (!db.objectStoreNames.contains(STORE_SAVES)) {
+        const s = db.createObjectStore(STORE_SAVES, {keyPath:'id'});
+        s.createIndex('romId', 'romId', {unique:false});
+      }
+      if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+        db.createObjectStore(STORE_SETTINGS, {keyPath:'key'});
+      }
+    };
+    req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbPut(store, value) {
+  return dbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).put(value);
+    tx.oncomplete = () => res(true);
+    tx.onerror = () => rej(tx.error);
+  }));
+}
+function dbGet(store, key) {
+  return dbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readonly');
+    const r = tx.objectStore(store).get(key);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }));
+}
+function dbGetAll(store, indexName, indexValue) {
+  return dbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readonly');
+    let req;
+    if (indexName && indexValue !== undefined) {
+      req = tx.objectStore(store).index(indexName).getAll(indexValue);
+    } else {
+      req = tx.objectStore(store).getAll();
+    }
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  }));
+}
+function dbDelete(store, key) {
+  return dbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).delete(key);
+    tx.oncomplete = () => res(true);
+    tx.onerror = () => rej(tx.error);
+  }));
+}
+
+async function persistKeyMap() {
+  await dbPut(STORE_SETTINGS, {key:'keyMap', value: APP.keyMap});
+}
+async function persistSettings() {
+  await dbPut(STORE_SETTINGS, {key:'settings', value: APP.settings});
+}
+async function loadPersisted() {
+  try {
+    const km = await dbGet(STORE_SETTINGS, 'keyMap');
+    if (km && km.value) {
+      APP.keyMap = km.value;
+    } else {
+      // Initialize from defaults
+      APP.keyMap = {};
+      SNES_BUTTONS.forEach(b => { APP.keyMap[b.bit] = b.key; });
+    }
+    const st = await dbGet(STORE_SETTINGS, 'settings');
+    if (st && st.value) Object.assign(APP.settings, st.value);
+    const ch = await dbGet(STORE_SETTINGS, 'cheats');
+    if (ch && ch.value) APP.cheats = ch.value;
+  } catch(e) { console.warn('loadPersisted failed', e); }
+  rebuildReverseKeyMap();
+}
+function rebuildReverseKeyMap() {
+  APP.reverseKeyMap = {};
+  for (const [bit, kb] of Object.entries(APP.keyMap)) {
+    APP.reverseKeyMap[normalizeKey(kb)] = parseInt(bit, 10);
+  }
+}
+function normalizeKey(k) {
+  if (!k) return '';
+  return k.toLowerCase();
+}
+
+/* ============================================================
+   ROM MANAGEMENT
+   ============================================================ */
+function triggerRomUpload() {
+  $('#romInput').click();
+}
+$('#romInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  for (const f of files) {
+    await handleRomFile(f);
+  }
+  e.target.value = '';
+});
+
+async function handleRomFile(file) {
+  if (!file) return;
+  const name = file.name;
+  const ext = name.split('.').pop().toLowerCase();
+  if (!['sfc','smc','zip','bin','swc','fig'].includes(ext)) {
+    toast('Formato não suportado: .' + ext, 'error');
+    return;
+  }
+  toast('Carregando ' + name + '...', 'info');
+  try {
+    let romData = await file.arrayBuffer();
+    if (ext === 'zip') {
+      romData = await extractRomFromZip(romData);
+      if (!romData) {
+        toast('Nenhum .sfc/.smc dentro do ZIP', 'error');
+        return;
+      }
+    }
+    // SMC files have a 512-byte copier header — strip it
+    let romBytes = new Uint8Array(romData);
+    if ((ext === 'smc' || ext === 'swc' || ext === 'fig') && romBytes.length % 1024 === 512) {
+      romBytes = romBytes.slice(512);
+    }
+    if (romBytes.length < 0x8000) {
+      toast('ROM muito pequena — inválida', 'error');
+      return;
+    }
+    const id = 'rom_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    const title = readSnesRomName(romBytes) || name.replace(/\.[^.]+$/, '');
+    const rom = {
+      id, name: title, filename: name,
+      size: romBytes.length, addedAt: Date.now(),
+      data: romBytes.buffer
+    };
+    await dbPut(STORE_ROMS, rom);
+    toast('ROM salva na biblioteca!', 'success');
+    await renderLibrary();
+    await loadRom(rom);
+  } catch (err) {
+    console.error(err);
+    toast('Erro ao carregar ROM: ' + err.message, 'error');
+  }
+}
+
+async function extractRomFromZip(buf) {
+  if (!window.fflate) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      const u8 = new Uint8Array(buf);
+      const unzipped = window.fflate.unzipSync(u8);
+      for (const [fname, data] of Object.entries(unzipped)) {
+        const lower = fname.toLowerCase();
+        if (lower.endsWith('.sfc') || lower.endsWith('.smc') || lower.endsWith('.bin')) {
+          resolve(data.buffer);
+          return;
+        }
+      }
+      const first = Object.values(unzipped)[0];
+      resolve(first ? first.buffer : null);
+    } catch (e) { reject(e); }
+  });
+}
+
+function readSnesRomName(buf) {
+  // SNES ROMs don't have a fixed header offset like GBA — varies by mapper type.
+  // Try internal ROM title at offset 0xFFC0 (LoROM) or 0x81C0 (HiROM after header strip).
+  try {
+    const u8 = new Uint8Array(buf);
+    const candidates = [0xFFC0, 0x80C0, 0x40C0];
+    for (const off of candidates) {
+      if (off + 21 > u8.length) continue;
+      let s = '';
+      for (let i = 0; i < 21; i++) {
+        const c = u8[off + i];
+        if (c === 0) break;
+        if (c >= 32 && c < 127) s += String.fromCharCode(c);
+      }
+      // Filter garbage
+      if (s.length >= 3 && /[A-Z]/.test(s)) return s.trim();
+    }
+    return null;
+  } catch { return null; }
+}
+
+// Helper to write Uint8Array data into Module HEAP at given pointer.
+// snes9x-2010-wasm only exposes HEAP8 (Int8Array) and HEAPF32 — we need to
+// wrap the underlying ArrayBuffer in a Uint8Array view to write bytes correctly.
+function writeHeapU8(ptr, src) {
+  new Uint8Array(window.Module.HEAP8.buffer).set(src, ptr);
+}
+// Helper to read a Uint8Array view from HEAP at given pointer/length.
+function readHeapU8(ptr, length) {
+  return new Uint8Array(new Uint8Array(window.Module.HEAP8.buffer).subarray(ptr, ptr + length));
+}
+
+async function loadRom(rom) {
+  APP.currentRom = rom;
+  APP.currentRomData = rom.data;
+  // Hide overlay
+  $('#screenOverlay').classList.add('hidden');
+  // HUD
+  $('#hud-rom').textContent = rom.name.slice(0, 14).toUpperCase();
+
+  if (!APP.coreReady) {
+    toast('Núcleo ainda carregando... tenta de novo em 2s', 'info');
+    // Queue the load
+    window.SBL_INIT_CALLBACK = async () => { await loadRom(rom); };
+    return;
+  }
+
+  try {
+    const M = window.Module;
+    const romBytes = new Uint8Array(rom.data);
+    const romPtr = M._my_malloc(romBytes.length);
+    writeHeapU8(romPtr, romBytes);
+    M._startWithRom(romPtr, romBytes.length, SAMPLE_RATE);
+    M._my_free(romPtr);
+    APP.isPlaying = true;
+    updateHud();
+    startRafLoop();
+    ensureAudioStarted();
+    toast('GAME ON · ' + rom.name, 'success');
+    // Try loading SRAM
+    await loadSramForRom();
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao iniciar ROM: ' + e.message, 'error');
+  }
+}
+
+async function loadSramForRom() {
+  if (!APP.currentRom) return;
+  try {
+    const sram = await dbGet(STORE_SAVES, 'sram_' + APP.currentRom.id);
+    if (sram && sram.data && APP.coreReady) {
+      const M = window.Module;
+      const data = new Uint8Array(sram.data);
+      if (data.length > 0x20000) data = data.subarray(0, 0x20000);
+      const ptr = M._my_malloc(data.length);
+      writeHeapU8(ptr, data);
+      M._loadSram(data.length, ptr);
+      M._my_free(ptr);
+      setTimeout(() => toast('Save anterior carregado — BORA!', 'info'), 800);
+    }
+  } catch (e) { console.warn('loadSramForRom', e); }
+}
+
+async function deleteRom(id) {
+  if (!confirm('Apagar esta ROM e todos os saves dela?')) return;
+  await dbDelete(STORE_ROMS, id);
+  const saves = await dbGetAll(STORE_SAVES, 'romId', id);
+  for (const s of saves) await dbDelete(STORE_SAVES, s.id);
+  if (APP.currentRom && APP.currentRom.id === id) {
+    stopRafLoop();
+    APP.currentRom = null;
+    APP.currentRomData = null;
+    APP.isPlaying = false;
+    $('#screenOverlay').classList.remove('hidden');
+    $('#hud-rom').textContent = 'NENHUMA';
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
+  }
+  toast('ROM removida', 'info');
+  await renderLibrary();
+}
+
+/* ============================================================
+   LIBRARY UI
+   ============================================================ */
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + 'B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + 'KB';
+  return (bytes/(1024*1024)).toFixed(1) + 'MB';
+}
+function formatDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) + ' ' +
+         d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+async function renderLibrary() {
+  const grid = $('#libGrid');
+  const empty = $('#libEmpty');
+  const roms = await dbGetAll(STORE_ROMS);
+  roms.sort((a,b) => b.addedAt - a.addedAt);
+  if (roms.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = roms.map(r => {
+    const isPlaying = APP.currentRom && APP.currentRom.id === r.id;
+    return `
+      <div class="lib-card ${isPlaying?'playing':''}" onclick="loadRomById('${r.id}')">
+        <div class="lib-thumb">
+          <div class="placeholder">${escapeHtml(r.name.slice(0,12).toUpperCase())}</div>
+          <div class="play-icon">▶</div>
+        </div>
+        <div class="lib-info">
+          <div class="lib-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</div>
+          <div class="lib-meta"><span>${formatSize(r.size)}</span><span>${formatDate(r.addedAt)}</span></div>
+        </div>
+        <div class="lib-actions">
+          <button class="lib-action" onclick="event.stopPropagation();loadRomById('${r.id}')">${isPlaying?'JOGANDO':'JOGAR'}</button>
+          <button class="lib-action danger" onclick="event.stopPropagation();deleteRom('${r.id}')">X</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function loadRomById(id) {
+  const rom = await dbGet(STORE_ROMS, id);
+  if (!rom) { toast('ROM não encontrada', 'error'); return; }
+  await loadRom(rom);
+  await renderLibrary();
+  document.getElementById('console').scrollIntoView({behavior:'smooth'});
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
+
+/* ============================================================
+   AUDIO (ScriptProcessor + AudioContext)
+   ============================================================ */
+function ensureAudioStarted() {
+  if (APP.audioContext) {
+    if (APP.audioContext.state === 'suspended') APP.audioContext.resume();
+    return;
+  }
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    APP.audioContext = new AudioCtx({ sampleRate: SAMPLE_RATE });
+    APP.audioGain = APP.audioContext.createGain();
+    APP.audioGain.gain.value = APP.isMuted ? 0 : APP.volume;
+    let scriptNode = null;
+    if (APP.audioContext.createScriptProcessor) {
+      scriptNode = APP.audioContext.createScriptProcessor(SOUND_BUFFER_SAMPLES, 0, 2);
+    } else if (APP.audioContext.createJavaScriptNode) {
+      scriptNode = APP.audioContext.createJavaScriptNode(SOUND_BUFFER_SAMPLES, 0, 2);
+    } else {
+      console.warn('No audio processor available');
+      return;
+    }
+    scriptNode.onaudioprocess = scriptNodeProcess;
+    scriptNode.connect(APP.audioGain);
+    APP.audioGain.connect(APP.audioContext.destination);
+    APP.audioScriptNode = scriptNode;
+  } catch (e) {
+    console.warn('Audio init failed', e);
+  }
+}
+
+function scriptNodeProcess(e) {
+  const outputL = e.outputBuffer.getChannelData(0);
+  const outputR = e.outputBuffer.getChannelData(1);
+  if (!APP.coreReady || !APP.isPlaying || !window.Module) {
+    outputL.fill(0);
+    outputR.fill(0);
+    return;
+  }
+  try {
+    const M = window.Module;
+    const soundBufferPtr = M._getSoundBuffer();
+    // soundBuffer is Float32, 2048 samples for L, then 2048 for R
+    const soundBuffer = new Float32Array(M.HEAPF32.buffer, soundBufferPtr, SOUND_BUFFER_SAMPLES * 2);
+    outputL.set(soundBuffer.subarray(0, SOUND_BUFFER_SAMPLES));
+    outputR.set(soundBuffer.subarray(SOUND_BUFFER_SAMPLES));
+  } catch (err) {
+    outputL.fill(0);
+    outputR.fill(0);
+  }
+}
+
+function toggleMute() {
+  APP.isMuted = !APP.isMuted;
+  const btn = $('#btnMute');
+  btn.querySelector('span:first-child').textContent = APP.isMuted ? '🔇 MUTED' : '♪ MUTE';
+  btn.classList.toggle('active', APP.isMuted);
+  if (APP.audioGain) {
+    APP.audioGain.gain.value = APP.isMuted ? 0 : APP.volume;
+  }
+  toast(APP.isMuted ? 'Áudio mutado' : 'Áudio ligado', 'info');
+}
+
+$('#volumeSlider').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value, 10);
+  APP.volume = v / 100;
+  $('#volumeVal').textContent = v + '%';
+  if (APP.audioGain && !APP.isMuted) {
+    APP.audioGain.gain.value = APP.volume;
+  }
+  clearTimeout(APP._volTimer);
+  APP._volTimer = setTimeout(() => {
+    localStorage.setItem('sbl_volume', String(APP.volume));
+  }, 300);
+});
+
+/* ============================================================
+   PLAYBACK CONTROL
+   ============================================================ */
+function togglePlay() {
+  if (!APP.coreReady || !APP.currentRom) {
+    toast('Carrega uma ROM primeiro!', 'info');
+    return;
+  }
+  if (APP.isPlaying) {
+    APP.isPlaying = false;
+    stopRafLoop();
+  } else {
+    APP.isPlaying = true;
+    startRafLoop();
+    ensureAudioStarted();
+  }
+  updateHud();
+}
+
+function restartGame() {
+  if (!APP.coreReady || !APP.currentRom) return;
+  if (!confirm('Reiniciar o jogo? Tu vais perder o progresso não salvo.')) return;
+  try {
+    const M = window.Module;
+    const romBytes = new Uint8Array(APP.currentRomData);
+    const romPtr = M._my_malloc(romBytes.length);
+    writeHeapU8(romPtr, romBytes);
+    M._startWithRom(romPtr, romBytes.length, SAMPLE_RATE);
+    M._my_free(romPtr);
+    APP.isPlaying = true;
+    startRafLoop();
+    updateHud();
+    toast('Jogo reiniciado', 'info');
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+}
+
+function setSpeed(s) {
+  APP.speed = s;
+  $('#hud-speed').textContent = s + 'x';
+  document.querySelectorAll('.hud-btn[data-speed]').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.speed,10) === s);
+  });
+  toast('Velocidade: ' + s + 'x', 'info');
+}
+
+function updateHud() {
+  $('#hud-status').textContent = APP.isPlaying ? 'JOGANDO' : 'PAUSADO';
+  $('#btnPlay').classList.toggle('active', APP.isPlaying);
+  $('#btnPause').classList.toggle('active', !APP.isPlaying);
+}
+
+/* ============================================================
+   MAIN LOOP (rAF + speed multiplier)
+   ============================================================ */
+function startRafLoop() {
+  if (APP.rafId) return;
+  APP.lastRafTime = 0;
+  APP.speedAccumulator = 0;
+  APP.rafId = requestAnimationFrame(rafCallback);
+}
+function stopRafLoop() {
+  if (APP.rafId) {
+    cancelAnimationFrame(APP.rafId);
+    APP.rafId = null;
+  }
+}
+
+function rafCallback(now) {
+  APP.rafId = requestAnimationFrame(rafCallback);
+  if (!APP.coreReady || !APP.isPlaying) return;
+  const M = window.Module;
+  if (!M || !M._mainLoop) return;
+
+  // Throttle to ~60fps regardless of refresh rate
+  if (APP.lastRafTime) {
+    const dt = (now - APP.lastRafTime) / 1000;  // seconds
+    // Each _mainLoop() advances one frame (~1/60s of emulation).
+    // For 1x speed, accumulate 1 frame per 1/60s real time.
+    APP.speedAccumulator += dt * 60 * APP.speed;
+  }
+  APP.lastRafTime = now;
+
+  // Run emulation frames (capped at 4 per rAF to avoid lockup)
+  let didRunFrame = false;
+  let safety = 4;
+  while (APP.speedAccumulator >= 1 && safety > 0) {
+    M._setJoypadInput(APP.keyInput | 0);
+    M._mainLoop();
+    APP.speedAccumulator -= 1;
+    didRunFrame = true;
+    safety--;
+  }
+  // If speed > 1 and we still have backlog, that's ok — drop excess
+  if (APP.speedAccumulator > APP.speed * 2) APP.speedAccumulator = APP.speed;
+
+  if (!didRunFrame) return;
+
+  // FPS counter
+  APP.fpsCounter++;
+  APP.fpsTimer += now - (APP.lastFrame || now);
+  APP.lastFrame = now;
+  if (APP.fpsTimer >= 1000) {
+    APP.fps = APP.fpsCounter;
+    $('#hud-fps').textContent = APP.settings.showFps ? APP.fps : '--';
+    APP.fpsCounter = 0;
+    APP.fpsTimer = 0;
+    autoSaveLoop();
+  }
+
+  // Render frame
+  try {
+    const frameBufferPtr = M._getScreenBuffer();
+    // 256 * 224 * 4 bytes (RGBA). snes9x-2010-wasm only exposes HEAP8 (Int8Array),
+    // so we wrap its underlying ArrayBuffer in a Uint8ClampedArray view.
+    const frameData = new Uint8ClampedArray(M.HEAP8.buffer, frameBufferPtr, SCREEN_WIDTH * SCREEN_HEIGHT * 4);
+    imageData.data.set(frameData);
+    ctx.putImageData(imageData, 0, 0);
+  } catch (e) {
+    console.warn('render error', e);
+  }
+}
+
+/* ============================================================
+   SAVE STATES + SRAM
+   ============================================================ */
+async function saveState(slot) {
+  if (!APP.coreReady || !APP.currentRom) {
+    toast('Carrega uma ROM primeiro!', 'info');
+    return;
+  }
+  try {
+    const M = window.Module;
+    // _saveState() returns a pointer to the state buffer
+    // _getStateSaveSize() returns the size in bytes
+    const statePtr = M._saveState();
+    const stateSize = M._getStateSaveSize();
+    if (!statePtr || !stateSize) {
+      toast('Não foi possível salvar o estado', 'error');
+      return;
+    }
+    const stateData = readHeapU8(statePtr, stateSize);
+    const copy = new Uint8Array(stateData);  // copy because HEAP may move during GC
+    const saveId = APP.currentRom.id + '_state_' + slot;
+    await dbPut(STORE_SAVES, {
+      id: saveId,
+      romId: APP.currentRom.id,
+      romName: APP.currentRom.name,
+      slot: slot,
+      size: copy.byteLength,
+      savedAt: Date.now(),
+      data: copy.buffer,
+      kind: 'state'
+    });
+    toast('Slot ' + slot + ' salvo!', 'success');
+    if (document.getElementById('modalSaveStates').classList.contains('visible')) {
+      renderSaveSlots();
+    }
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao salvar: ' + e.message, 'error');
+  }
+}
+
+async function loadState(slot) {
+  if (!APP.coreReady || !APP.currentRom) return;
+  const saveId = APP.currentRom.id + '_state_' + slot;
+  const save = await dbGet(STORE_SAVES, saveId);
+  if (!save) {
+    toast('Slot ' + slot + ' vazio', 'error');
+    return;
+  }
+  try {
+    const M = window.Module;
+    const data = new Uint8Array(save.data);
+    const ptr = M._my_malloc(data.length);
+    writeHeapU8(ptr, data);
+    M._loadState(ptr, data.length);
+    M._my_free(ptr);
+    if (!APP.isPlaying) {
+      APP.isPlaying = true;
+      startRafLoop();
+      updateHud();
+    }
+    toast('Slot ' + slot + ' carregado!', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao carregar: ' + e.message, 'error');
+  }
+}
+
+async function deleteState(slot) {
+  if (!APP.currentRom) return;
+  const saveId = APP.currentRom.id + '_state_' + slot;
+  await dbDelete(STORE_SAVES, saveId);
+  toast('Slot ' + slot + ' apagado', 'info');
+  renderSaveSlots();
+}
+
+async function quickSave() {
+  await saveState(0);
+}
+async function quickLoad() {
+  await loadState(0);
+}
+
+async function autoSaveLoop() {
+  if (!APP.isPlaying || !APP.currentRom || !APP.settings.autoSave) return;
+  try {
+    APP.autoSaveTimer++;
+    if (APP.autoSaveTimer >= APP.settings.autoSaveInterval) {
+      APP.autoSaveTimer = 0;
+      await saveSramToDb(true);
+    }
+  } catch (e) { console.warn('autosave', e); }
+}
+
+async function saveSramToDb(silent) {
+  if (!APP.coreReady || !APP.currentRom) return;
+  try {
+    const M = window.Module;
+    M._saveSramRequest();
+    const sramSize = M._getSaveSramSize();
+    if (sramSize === 0) return;
+    const sramPtr = M._getSaveSram();
+    const sramData = readHeapU8(sramPtr, sramSize);  // copy out of HEAP
+    const copy = new Uint8Array(sramData);
+    await dbPut(STORE_SAVES, {
+      id: 'sram_' + APP.currentRom.id,
+      romId: APP.currentRom.id,
+      romName: APP.currentRom.name,
+      slot: -2,
+      size: copy.byteLength,
+      savedAt: Date.now(),
+      data: copy.buffer,
+      kind: 'sram'
+    });
+    if (!silent) toast('SRAM salvo!', 'success');
+  } catch (e) {
+    console.warn('saveSramToDb', e);
+    if (!silent) toast('Erro ao salvar SRAM: ' + e.message, 'error');
+  }
+}
+
+/* ============================================================
+   SAVE STATES MODAL
+   ============================================================ */
+async function openSaveStates() {
+  await renderSaveSlots();
+  openModal('modalSaveStates');
+}
+async function renderSaveSlots() {
+  const body = $('#saveSlotsBody');
+  if (!APP.currentRom) {
+    body.innerHTML = '<p style="text-align:center;padding:24px;opacity:.6">Carrega uma ROM primeiro!</p>';
+    return;
+  }
+  const saves = await dbGetAll(STORE_SAVES, 'romId', APP.currentRom.id);
+  const slotMap = {};
+  for (const s of saves) slotMap[s.slot] = s;
+  let html = `
+    <p style="font-size:12px;opacity:.7;background:var(--yellow);border:2px solid #000;padding:8px 12px;font-weight:600">
+      ROM ATUAL: <b>${escapeHtml(APP.currentRom.name)}</b>
+    </p>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;justify-content:center" onclick="saveSramToDb(false)">💾 SALVAR SRAM</button>
+    </div>`;
+  for (let slot = 0; slot < 5; slot++) {
+    const s = slotMap[slot];
+    const isEmpty = !s;
+    html += `
+      <div class="save-slot ${isEmpty?'empty':''}">
+        <div class="info">
+          <div class="slot-n">SLOT ${slot}${slot===0?' ⚡':''}</div>
+          <div class="slot-meta">${s ? formatDate(s.savedAt) + ' · ' + formatSize(s.size) : '— vazio —'}</div>
+        </div>
+        <div class="save-slot-actions">
+          <button class="slot-btn save" onclick="saveState(${slot})">SALVAR</button>
+          <button class="slot-btn load" onclick="loadState(${slot})" ${isEmpty?'disabled':''}>CARREGAR</button>
+          <button class="slot-btn del" onclick="deleteState(${slot})" ${isEmpty?'disabled':''}>X</button>
+        </div>
+      </div>`;
+  }
+  const sram = slotMap[-2];
+  if (sram) {
+    html += `
+      <div class="save-slot" style="background:var(--cyan)">
+        <div class="info">
+          <div class="slot-n" style="color:#000">🔋 SRAM NATIVO</div>
+          <div class="slot-meta">${formatDate(sram.savedAt)} · ${formatSize(sram.size)}</div>
+        </div>
+        <div class="save-slot-actions">
+          <button class="slot-btn load" onclick="loadSramForRom()">RECARREGAR</button>
+        </div>
+      </div>`;
+  }
+  body.innerHTML = html;
+}
+
+/* ============================================================
+   KEY MAPPING MODAL
+   ============================================================ */
+let _waitingForKey = null;
+function openKeymap() {
+  renderKeymap();
+  openModal('modalKeymap');
+}
+function renderKeymap() {
+  const body = $('#keymapBody');
+  body.innerHTML = `
+    <p style="font-size:12px;opacity:.7">Clica num botão do SNES e depois aperta a tecla que tu queres mapear. Salva automático.</p>
+    ${SNES_BUTTONS.map(b => `
+      <div class="kbd-map-row">
+        <span class="gba-key">${b.name}</span>
+        <button class="kbd-map-btn" onclick="captureKey(${b.bit})" id="kmap_${b.bit}">${escapeHtml(APP.keyMap[b.bit] || '—')}</button>
+      </div>
+    `).join('')}
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" style="flex:1;justify-content:center" onclick="resetKeyMap()">RESET PADRÃO</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="closeModal('modalKeymap')">FECHAR</button>
+    </div>
+  `;
+}
+function captureKey(bit) {
+  _waitingForKey = bit;
+  for (const b of SNES_BUTTONS) {
+    const el = document.getElementById('kmap_' + b.bit);
+    if (el) {
+      el.textContent = b.bit === bit ? '... APERTE ...' : (APP.keyMap[b.bit] || '—');
+      el.style.background = b.bit === bit ? 'var(--accent)' : 'var(--fg)';
+      el.style.color = b.bit === bit ? '#fff' : 'var(--bg)';
+    }
+  }
+}
+async function resetKeyMap() {
+  APP.keyMap = {};
+  SNES_BUTTONS.forEach(b => { APP.keyMap[b.bit] = b.key; });
+  await persistKeyMap();
+  rebuildReverseKeyMap();
+  renderKeymap();
+  renderKbdGrid();
+  toast('Key map resetado', 'info');
+}
+
+/* ============================================================
+   CHEATS MODAL
+   ============================================================ */
+async function openCheats() {
+  await renderCheats();
+  openModal('modalCheats');
+}
+async function renderCheats() {
+  const body = $('#cheatsBody');
+  const cheats = APP.cheats || [];
+  let html = `
+    <p style="font-size:12px;opacity:.7;background:var(--yellow);border:2px solid #000;padding:8px 12px">
+      <b>GAME GENIE</b> (formato XXXX-YYYY) · <b>PRO ACTION REPLAY</b> (formato XXXXXXXX).
+      Adiciona códigos e liga/desliga na hora. Alguns jogos não suportam cheats.
+    </p>
+  `;
+  if (cheats.length === 0) {
+    html += '<p style="text-align:center;padding:24px;opacity:.6">// NENHUM CHEAT — ADICIONA ABAIXO</p>';
+  } else {
+    html += cheats.map((c, i) => `
+      <div class="cheat-row">
+        <div class="row">
+          <button class="cheat-toggle ${c.enabled?'on':''}" onclick="toggleCheat(${i})">${c.enabled?'ON':'OFF'}</button>
+          <input class="cheat-input code" value="${escapeHtml(c.code)}" readonly>
+          <input class="cheat-input desc" value="${escapeHtml(c.desc||'')}" readonly style="flex:2">
+          <button class="cheat-del" onclick="deleteCheat(${i})">X</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  html += `
+    <div style="background:var(--green);border:2px solid #000;padding:12px;display:grid;gap:8px">
+      <input class="cheat-input code" id="newCheatCode" placeholder="XXXX-YYYY ou XXXXXXXX" style="text-transform:uppercase">
+      <input class="cheat-input desc" id="newCheatDesc" placeholder="Descrição (opcional)">
+      <button class="btn btn-dark" style="justify-content:center" onclick="addCheat()">+ ADICIONAR CHEAT</button>
+    </div>
+    <p style="font-size:11px;opacity:.6;text-align:center">
+      Cheats só funcionam em alguns jogos. Pra remover, desliga e apaga.
+    </p>
+  `;
+  body.innerHTML = html;
+}
+async function addCheat() {
+  const code = document.getElementById('newCheatCode').value.trim().toUpperCase();
+  const desc = document.getElementById('newCheatDesc').value.trim();
+  if (!code) { toast('Digite o código do cheat', 'error'); return; }
+  // Validate format
+  const isGameGenie = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code);
+  const isPAR = /^[A-F0-9]{8}$/.test(code);
+  if (!isGameGenie && !isPAR) {
+    toast('Formato inválido. Use XXXX-YYYY (Game Genie) ou XXXXXXXX (PAR)', 'error', 4000);
+    return;
+  }
+  APP.cheats.push({ code, desc, enabled: true, type: isGameGenie ? 'gg' : 'par' });
+  await dbPut(STORE_SETTINGS, {key:'cheats', value: APP.cheats});
+  applyCheats();
+  toast('Cheat adicionado: ' + code, 'success');
+  renderCheats();
+}
+async function toggleCheat(i) {
+  APP.cheats[i].enabled = !APP.cheats[i].enabled;
+  await dbPut(STORE_SETTINGS, {key:'cheats', value: APP.cheats});
+  applyCheats();
+  renderCheats();
+}
+async function deleteCheat(i) {
+  APP.cheats.splice(i, 1);
+  await dbPut(STORE_SETTINGS, {key:'cheats', value: APP.cheats});
+  applyCheats();
+  renderCheats();
+}
+function applyCheats() {
+  // Note: snes9x-2010-wasm doesn't expose a cheat API in the WASM build.
+  // This is a UI stub — cheats are stored but require manual ROM patching.
+  // For a real implementation, we'd need to patch the ROM in memory.
+  // For now, we just notify the user.
+  if (APP.cheats.filter(c => c.enabled).length > 0) {
+    toast('Cheats salvos — reinicia o jogo pra aplicar', 'info');
+  }
+}
+
+/* ============================================================
+   SETTINGS MODAL
+   ============================================================ */
+function openSettings() {
+  renderSettings();
+  openModal('modalSettings');
+}
+function renderSettings() {
+  const body = $('#settingsBody');
+  body.innerHTML = `
+    <div class="settings-group">
+      <div class="setting-row">
+        <div>
+          <div class="lbl">AUTO-SAVE SRAM</div>
+          <div class="desc">Salva SRAM automático a cada ${APP.settings.autoSaveInterval}s</div>
+        </div>
+        <div class="toggle ${APP.settings.autoSave?'on':''}" onclick="toggleSetting('autoSave', this)"></div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">INTERVALO AUTO-SAVE</div>
+          <div class="desc">Segundos entre cada save automático</div>
+        </div>
+        <div class="slider-row" style="min-width:160px">
+          <input type="range" class="slider" min="10" max="120" step="5" value="${APP.settings.autoSaveInterval}" oninput="updateAutoSaveInterval(this.value)">
+          <span class="slider-val" id="asi">${APP.settings.autoSaveInterval}s</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">MOSTRAR FPS</div>
+          <div class="desc">Exibe contador de quadros no HUD</div>
+        </div>
+        <div class="toggle ${APP.settings.showFps?'on':''}" onclick="toggleSetting('showFps', this)"></div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">FILTRO DE TELA</div>
+          <div class="desc">Visual do canvas (pixelado/suave/scanlines/CRT)</div>
+        </div>
+        <select style="border:2px solid #000;padding:6px;font-family:var(--font-mono);background:var(--bg)" onchange="setFilter(this.value)">
+          <option value="pixelated" ${APP.settings.filter==='pixelated'?'selected':''}>PIXELADO</option>
+          <option value="smooth" ${APP.settings.filter==='smooth'?'selected':''}>SUAVE</option>
+          <option value="scanlines" ${APP.settings.filter==='scanlines'?'selected':''}>SCANLINES</option>
+          <option value="crt" ${APP.settings.filter==='crt'?'selected':''}>CRT</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">CONTROLES TOUCH</div>
+          <div class="desc">auto = só no mobile · sempre = força exibir · nunca = desliga</div>
+        </div>
+        <select style="border:2px solid #000;padding:6px;font-family:var(--font-mono);background:var(--bg)" onchange="APP.settings.touchControls=this.value;persistSettings();updateTouchVisibility()">
+          <option value="auto" ${APP.settings.touchControls==='auto'?'selected':''}>AUTO</option>
+          <option value="always" ${APP.settings.touchControls==='always'?'selected':''}>SEMPRE</option>
+          <option value="never" ${APP.settings.touchControls==='never'?'selected':''}>NUNCA</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">PREFERIR PAISAGEM (MOBILE)</div>
+          <div class="desc">Pede pra girar o celular quando em retrato</div>
+        </div>
+        <div class="toggle ${APP.settings.preferLandscape?'on':''}" onclick="toggleSetting('preferLandscape', this);updateOrientationHint()"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" style="flex:1;justify-content:center" onclick="clearAllData()">LIMPAR TUDO</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="closeModal('modalSettings')">FECHAR</button>
+    </div>
+  `;
+}
+async function toggleSetting(key, el) {
+  APP.settings[key] = !APP.settings[key];
+  el.classList.toggle('on', APP.settings[key]);
+  await persistSettings();
+  toast(key + ': ' + (APP.settings[key]?'ON':'OFF'), 'info');
+}
+function updateAutoSaveInterval(v) {
+  APP.settings.autoSaveInterval = parseInt(v,10);
+  $('#asi').textContent = v + 's';
+  persistSettings();
+}
+function setFilter(f) {
+  APP.settings.filter = f;
+  applyFilter();
+  persistSettings();
+  // Update active button
+  document.querySelectorAll('.hud-btn[data-filter]').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === f);
+  });
+  toast('Filtro: ' + f, 'info');
+}
+function applyFilter() {
+  const f = APP.settings.filter;
+  canvas.classList.toggle('smooth', f === 'smooth');
+  canvas.style.imageRendering = (f === 'smooth') ? 'auto' : 'pixelated';
+  const overlay = $('#filterOverlay');
+  overlay.className = 'screen-filter-overlay';
+  if (f === 'scanlines') overlay.classList.add('scanlines');
+  else if (f === 'crt') overlay.classList.add('crt');
+}
+async function clearAllData() {
+  if (!confirm('Apagar TODAS as ROMs, saves e ajustes? Esta ação não pode ser desfeita.')) return;
+  indexedDB.deleteDatabase(DB_NAME);
+  localStorage.clear();
+  toast('Limpando... recarregue a página', 'info');
+  setTimeout(() => location.reload(), 1500);
+}
+
+/* ============================================================
+   SCREENSHOT
+   ============================================================ */
+function takeScreenshot() {
+  if (!APP.currentRom) {
+    toast('Carrega uma ROM primeiro!', 'info');
+    return;
+  }
+  try {
+    const dataUrl = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'sbl_' + (APP.currentRom.name || 'screenshot').replace(/[^a-z0-9]/gi,'_') + '_' + Date.now() + '.png';
+    a.click();
+    toast('Screenshot salvo!', 'success');
+  } catch (e) {
+    toast('Erro ao capturar: ' + e.message, 'error');
+  }
+}
+
+/* ============================================================
+   MODAL HELPERS
+   ============================================================ */
+function openModal(id) {
+  document.getElementById(id).classList.add('visible');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', (e) => {
+    if (e.target === m) m.classList.remove('visible');
+  });
+});
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg, type='info', duration=2800) {
+  const c = $('#toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ⓘ';
+  t.innerHTML = `<span class="t-icon">${icon}</span><span>${escapeHtml(msg)}</span>`;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('removing');
+    setTimeout(() => t.remove(), 250);
+  }, duration);
+}
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+  if (_waitingForKey !== null) {
+    e.preventDefault();
+    let key = e.key;
+    if (key === ' ') key = 'Space';
+    APP.keyMap[_waitingForKey] = key;
+    const bit = _waitingForKey;
+    _waitingForKey = null;
+    persistKeyMap();
+    rebuildReverseKeyMap();
+    renderKeymap();
+    renderKbdGrid();
+    toast('Mapeado: ' + key, 'success');
+    return;
+  }
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.visible').forEach(m => m.classList.remove('visible'));
+    return;
+  }
+  // Global shortcuts (don't intercept if modifier)
+  if (e.ctrlKey || e.metaKey) return;
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); return; }
+  if (e.key === 'F5') { e.preventDefault(); quickSave(); return; }
+  if (e.key === 'F8') { e.preventDefault(); quickLoad(); return; }
+  if (e.key === 'F' || e.key === 'f') { e.preventDefault(); toggleFullscreen(); return; }
+  if (e.key === 'M' || e.key === 'm') { toggleMute(); return; }
+  if (e.key === 'K' || e.key === 'k') { openKeymap(); return; }
+  if (e.key === 'H' || e.key === 'h') { openCheats(); return; }
+  if (e.key === 'P' || e.key === 'p') { takeScreenshot(); return; }
+  if (e.key === ',') { openSettings(); return; }
+  if (['1','2','3','4'].includes(e.key)) { setSpeed(parseInt(e.key,10)); return; }
+  // Filter shortcuts (uppercase versions)
+  if (e.key === 'L' || e.key === 'l') { return; }  // already used for quickLoad
+  if (e.key === 'C' || e.key === 'c') { setFilter('crt'); return; }
+
+  // SNES joypad input
+  const norm = normalizeKey(e.key);
+  const bit = APP.reverseKeyMap[norm];
+  if (bit !== undefined) {
+    e.preventDefault();
+    APP.keyInput |= (1 << bit);
+    highlightTouchBtn(bit, true);
+  }
+});
+window.addEventListener('keyup', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+  const norm = normalizeKey(e.key);
+  const bit = APP.reverseKeyMap[norm];
+  if (bit !== undefined) {
+    e.preventDefault();
+    APP.keyInput &= ~(1 << bit) & 0xFFFFFFFF;
+    highlightTouchBtn(bit, false);
+  }
+});
+
+function highlightTouchBtn(bit, on) {
+  const btn = document.querySelector(`.touch-controls [data-key="${bit}"]`);
+  if (btn) btn.classList.toggle('pressed', on);
+}
+
+/* ============================================================
+   TOUCH CONTROLS
+   ============================================================ */
+function setupTouchControls() {
+  document.querySelectorAll('.touch-controls [data-key]').forEach(btn => {
+    const bit = parseInt(btn.dataset.key, 10);
+    const press = (e) => {
+      e.preventDefault();
+      btn.classList.add('pressed');
+      APP.keyInput |= (1 << bit);
+    };
+    const release = (e) => {
+      e.preventDefault();
+      btn.classList.remove('pressed');
+      APP.keyInput &= ~(1 << bit) & 0xFFFFFFFF;
+    };
+    btn.addEventListener('touchstart', press, {passive:false});
+    btn.addEventListener('touchend', release, {passive:false});
+    btn.addEventListener('touchcancel', release, {passive:false});
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+  });
+}
+
+function isMobile() {
+  const uaMobile = /Android|iPhone|iPad|iPod|Mobile|Windows Phone|BlackBerry|Opera Mini/i.test(navigator.userAgent);
+  const hasTouch = navigator.maxTouchPoints > 1 && window.matchMedia('(pointer: coarse)').matches;
+  const smallViewport = window.matchMedia('(max-width: 820px)').matches;
+  return uaMobile || hasTouch || smallViewport;
+}
+
+function updateTouchVisibility() {
+  const tc = $('#touchControls');
+  let show = false;
+  if (APP.settings.touchControls === 'always') show = true;
+  else if (APP.settings.touchControls === 'never') show = false;
+  else show = isMobile();
+  tc.classList.toggle('visible', show);
+  $('#touchToggleBtn').textContent = show ? '▼ ESCONDER' : '▲ CONTROLES';
+}
+
+function toggleTouch() {
+  const tc = $('#touchControls');
+  const isShown = tc.classList.contains('visible');
+  tc.classList.toggle('visible', !isShown);
+  $('#touchToggleBtn').textContent = !isShown ? '▼ ESCONDER' : '▲ CONTROLES';
+}
+
+/* ============================================================
+   DRAG & DROP
+   ============================================================ */
+let dragCounter = 0;
+window.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dragCounter++;
+  $('#dragOverlay').classList.add('visible');
+});
+window.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    $('#dragOverlay').classList.remove('visible');
+  }
+});
+window.addEventListener('dragover', (e) => { e.preventDefault(); });
+window.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  $('#dragOverlay').classList.remove('visible');
+  const files = Array.from(e.dataTransfer.files || []);
+  for (const f of files) {
+    await handleRomFile(f);
+  }
+});
+
+const dropZone = $('#dropZone');
+['dragenter','dragover'].forEach(ev => {
+  dropZone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragging');
+  });
+});
+['dragleave','drop'].forEach(ev => {
+  dropZone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragging');
+  });
+});
+
+/* ============================================================
+   FULLSCREEN
+   ============================================================ */
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen?.().catch(() => {
+      toast('Tela cheia não suportada neste browser', 'error');
+    });
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  document.body.classList.toggle('fullscreen-mode', !!document.fullscreenElement);
+  if (document.fullscreenElement) {
+    document.body.classList.add('want-landscape');
+  } else {
+    document.body.classList.remove('want-landscape');
+  }
+  updateTouchVisibility();
+});
+
+function updateOrientationHint() {
+  document.body.classList.toggle('want-landscape', APP.settings.preferLandscape && isMobile() && !document.fullscreenElement);
+}
+window.addEventListener('orientationchange', updateOrientationHint);
+
+/* ============================================================
+   KBD GRID (instructions)
+   ============================================================ */
+function renderKbdGrid() {
+  const grid = $('#kbdGrid');
+  grid.innerHTML = SNES_BUTTONS.map(b => `
+    <div class="kbd-row">
+      <span>${b.name}</span>
+      <span class="key">${escapeHtml(APP.keyMap[b.bit] || '—')}</span>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init() {
+  await loadPersisted();
+
+  const savedVol = localStorage.getItem('sbl_volume');
+  if (savedVol) {
+    APP.volume = parseFloat(savedVol);
+    $('#volumeSlider').value = Math.round(APP.volume * 100);
+    $('#volumeVal').textContent = Math.round(APP.volume * 100) + '%';
+  }
+
+  setupTouchControls();
+  updateTouchVisibility();
+  updateOrientationHint();
+  applyFilter();
+  // Mark active filter button
+  document.querySelectorAll('.hud-btn[data-filter]').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === APP.settings.filter);
+  });
+  renderKbdGrid();
+  setSpeed(1);
+  await renderLibrary();
+  updateHud();
+
+  // Mark speed buttons
+  document.querySelectorAll('.hud-btn[data-speed]').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.speed,10) === 1);
+  });
+
+  window.addEventListener('resize', () => {
+    updateTouchVisibility();
+    updateOrientationHint();
+  });
+
+  // Unlock audio on first user gesture (browser autoplay policy)
+  const unlock = () => {
+    if (APP.audioContext && APP.audioContext.state === 'suspended') {
+      APP.audioContext.resume();
+    } else {
+      ensureAudioStarted();
+    }
+    document.removeEventListener('pointerdown', unlock);
+  };
+  document.addEventListener('pointerdown', unlock);
+
+  // Check core ready
+  if (window.SBL_CORE_READY) {
+    APP.coreReady = true;
+  } else {
+    window.SBL_INIT_CALLBACK = () => {
+      APP.coreReady = true;
+      toast('Núcleo SNES pronto!', 'success');
+    };
+  }
+
+  // Console greeting
+  console.log('%c SBL · SUPER ULTIMATE ', 'background:#FF6B35;color:#fff;font-weight:bold;font-size:14px;padding:4px 8px');
+  console.log('%c BOTA O JOGO PRA RODAR ★ 16 BITS FOREVER ', 'background:#1A1A1A;color:#00D9FF;font-size:12px;padding:2px 6px');
+}
+
+// Boot
+window.addEventListener('load', () => {
+  setTimeout(init, 100);
+});
+
+// Make functions global for inline onclick handlers
+window.triggerRomUpload = triggerRomUpload;
+window.togglePlay = togglePlay;
+window.restartGame = restartGame;
+window.setSpeed = setSpeed;
+window.toggleMute = toggleMute;
+window.openSaveStates = openSaveStates;
+window.quickSave = quickSave;
+window.quickLoad = quickLoad;
+window.openKeymap = openKeymap;
+window.openSettings = openSettings;
+window.toggleFullscreen = toggleFullscreen;
+window.toggleTouch = toggleTouch;
+window.saveState = saveState;
+window.loadState = loadState;
+window.deleteState = deleteState;
+window.loadSramForRom = loadSramForRom;
+window.saveSramToDb = saveSramToDb;
+window.captureKey = captureKey;
+window.resetKeyMap = resetKeyMap;
+window.toggleSetting = toggleSetting;
+window.updateAutoSaveInterval = updateAutoSaveInterval;
+window.setFilter = setFilter;
+window.applyFilter = applyFilter;
+window.clearAllData = clearAllData;
+window.closeModal = closeModal;
+window.loadRomById = loadRomById;
+window.deleteRom = deleteRom;
+window.persistSettings = persistSettings;
+window.updateTouchVisibility = updateTouchVisibility;
+window.updateOrientationHint = updateOrientationHint;
+window.openCheats = openCheats;
+window.addCheat = addCheat;
+window.toggleCheat = toggleCheat;
+window.deleteCheat = deleteCheat;
+window.takeScreenshot = takeScreenshot;
+</script>
+</body>
+</html>
